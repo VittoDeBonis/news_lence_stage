@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:news_lens/models/news_class.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -19,12 +20,16 @@ class _NewsDetailsState extends State<NewsDetails> {
     super.initState();
 
     _category = _determineCategory(widget.news);
-    print('NewsDetails - categoria finale utilizzata: "$_category"');
+    if (kDebugMode) {
+      print('NewsDetails - categoria finale utilizzata: "$_category"');
+    }
   }
 
   String _determineCategory(News news) {
     if (news.category != null && news.category.isNotEmpty) {
-      print('NewsDetails - usando categoria esistente: "${news.category}"');
+      if (kDebugMode) {
+        print('NewsDetails - usando categoria esistente: "${news.category}"');
+      }
       return news.category;
     }
  
@@ -43,7 +48,9 @@ class _NewsDetailsState extends State<NewsDetails> {
               searchText.contains('device') || searchText.contains('digital')) {
       return 'technology';
     } else {
-      print('NewsDetails - categoria non determinabile, usando default: "general"');
+      if (kDebugMode) {
+        print('NewsDetails - categoria non determinabile, usando default: "general"');
+      }
       return 'general';
     }
   }
@@ -178,7 +185,9 @@ class _NewsDetailsState extends State<NewsDetails> {
 
   Widget _buildCategoryIcon(String category) {
     String normalizedCategory = category.trim().toLowerCase();
-    print('NewsDetails - mostrando icona per categoria: "$normalizedCategory"');
+    if (kDebugMode) {
+      print('NewsDetails - mostrando icona per categoria: "$normalizedCategory"');
+    }
     
     IconData iconData;
     Color bgColor;

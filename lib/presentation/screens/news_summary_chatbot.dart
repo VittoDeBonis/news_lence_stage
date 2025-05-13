@@ -8,11 +8,8 @@ import 'package:translator/translator.dart';
 import 'package:provider/provider.dart';
 import 'package:news_lens/models/news_class.dart';
 import 'package:chat_gpt_sdk/chat_gpt_sdk.dart';
-
-import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 
 class NewsSummaryChatbot extends StatefulWidget {
   final News news;
@@ -116,7 +113,9 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
         _saveSummaryToFirebase(responseText);
       }
     } catch (e) {
-      print("Error generating summary: $e");
+      if (kDebugMode) {
+        print("Error generating summary: $e");
+      }
       if (mounted) {
         setState(() {
           _summary = "Sorry, I couldn't summarize this article.";
@@ -195,7 +194,9 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
         return date;
       }
     } catch (e) {
-      print('Error formatting date: $e');
+      if (kDebugMode) {
+        print('Error formatting date: $e');
+      }
     }
     return 'N/A';
   }
@@ -228,7 +229,9 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
         .collection('news_summaries')
         .add(summaryData);
       
-      print("Summary saved successfully");
+      if (kDebugMode) {
+        print("Summary saved successfully");
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -267,25 +270,35 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
         });
       });
       flutterTts.setCompletionHandler(() {
-        print("TTS COMPLETED");
+        if (kDebugMode) {
+          print("TTS COMPLETED");
+        }
         setState(() {
           _isSpeaking = false;
         });
       });
       flutterTts.setCancelHandler(() {
-        print("TTS CANCELLED");
+        if (kDebugMode) {
+          print("TTS CANCELLED");
+        }
         _isSpeaking = false;
       });
       flutterTts.setErrorHandler((message) {
-        print("TTS ERROR: $message");
+        if (kDebugMode) {
+          print("TTS ERROR: $message");
+        }
         setState(() {
           _isSpeaking = false;
           _errorMessage = message;
         });
       });
-      print('TTS initialized successfully');
+      if (kDebugMode) {
+        print('TTS initialized successfully');
+      }
     } catch (e) {
-      print('Error initializing TTS $e');
+      if (kDebugMode) {
+        print('Error initializing TTS $e');
+      }
       setState(() {
         _errorMessage = e.toString();
       });
@@ -294,24 +307,32 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
 
   Future<void> _speak() async {
     if (_summary.isEmpty) {
-      print("Summary is empty, nothing to speak");
+      if (kDebugMode) {
+        print("Summary is empty, nothing to speak");
+      }
       return;
     }
     try {
       if (_isSpeaking) {
-        print("Stopping TTS");
+        if (kDebugMode) {
+          print("Stopping TTS");
+        }
         await flutterTts.stop();
         setState(() {
           _isSpeaking = false;
         });
       } else {
         String textToSpeak = "$_displayTitle. $_summary";
-        print("Starting TTS with text: ${textToSpeak.substring(0, textToSpeak.length > 20 ? 20 : textToSpeak.length)}...");
+        if (kDebugMode) {
+          print("Starting TTS with text: ${textToSpeak.substring(0, textToSpeak.length > 20 ? 20 : textToSpeak.length)}...");
+        }
         await flutterTts.setVolume(_volume);
         await flutterTts.setPitch(_pitch);
         await flutterTts.setSpeechRate(_rate);
         var result = await flutterTts.speak(textToSpeak);
-        print("speak result: $result");
+        if (kDebugMode) {
+          print("speak result: $result");
+        }
         if (result == 1) {
           Future.delayed(const Duration(seconds: 5), () async {
             await flutterTts.speak(textToSpeak);
@@ -319,7 +340,9 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
         }
       }
     } catch (e) {
-      print("Error while speaking: $e");
+      if (kDebugMode) {
+        print("Error while speaking: $e");
+      }
       setState(() {
         _errorMessage = e.toString();
       });
@@ -344,8 +367,12 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
 
     final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
     final String targetLanguage = localeProvider.locale.languageCode;
-    print("Current locale: ${localeProvider.locale}");
-    print("Target language for translation: ${targetLanguage}");
+    if (kDebugMode) {
+      print("Current locale: ${localeProvider.locale}");
+    }
+    if (kDebugMode) {
+      print("Target language for translation: ${targetLanguage}");
+    }
 
     try {
       final QuerySnapshot translatedSnapshot = await _firestore
@@ -592,52 +619,6 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
         );
       }
     );
-  }
-  
-  Future<void> _saveSummaryWithRating(String summary, int rating) async {
-    try{
-      final User? user = _auth.currentUser;
-      if(user == null){
-        print("Cannot save summary: No user logged in");
-        return;
-      } 
-      final summaryData = {
-        'userId': user.uid,
-        'newsId': widget.news.id,
-        'newsTitle': widget.news.title,
-        'newsSource': widget.news.source,
-        'summary': summary,
-        'language': _isTranslated
-          ? Provider.of<LocaleProvider>(context, listen: false)
-            .locale
-            .languageCode
-          : 'original',
-        'publishedAt': widget.news.publishedAt,
-        'createdAt': FieldValue.serverTimestamp(),
-        'url': widget.news.url,
-        'rating': rating,
-      };
-
-      await _firestore
-        .collection('news_summaries')
-        .add(summaryData);
-
-      print("Summary with rating saved successfully");
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Evaluation successfully saved"),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    } catch (e) {
-      if(kDebugMode){
-        print("Error saving summary with rating to firebase: $e");
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error saving rated summary: ${e.toString()}"))
-      );
-    }
   }
   
   @override

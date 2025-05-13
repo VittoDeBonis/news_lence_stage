@@ -4,13 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:news_lens/presentation/screens/multi_news_chatbot.dart';
 import 'package:news_lens/presentation/screens/news_summary_chatbot.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:news_lens/models/news_class.dart';
 import 'package:news_lens/presentation/screens/details/news_details.dart';
 import 'package:news_lens/providers/news_provider.dart';
-import 'package:chat_gpt_sdk/chat_gpt_sdk.dart';
-import 'package:dash_chat_2/dash_chat_2.dart';
 
 
 class HomeTab extends StatefulWidget {
