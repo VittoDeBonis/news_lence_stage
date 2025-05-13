@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "383226017741",
+    "project_id": "newslens-7f292",
+    "storage_bucket": "newslens-7f292.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:383226017741:android:ddc395f5ed20218a543684",
+        "android_client_info": {
+          "package_name": "com.example.news_lens"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAbDiBs9yOJ3J4ml8foeTYEWNHw3RcOJUI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
