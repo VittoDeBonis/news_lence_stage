@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:news_lens/l10n.dart';
 import 'package:news_lens/presentation/screens/onboarding/pre_settings/pre_settings_provider.dart';
@@ -15,8 +16,8 @@ import 'package:news_lens/presentation/screens/auth/register.dart';
 import 'package:news_lens/presentation/screens/home_page.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-
 Future main() async {
+  await dotenv.load();
   WidgetsFlutterBinding.ensureInitialized();
 
   if(kIsWeb) {

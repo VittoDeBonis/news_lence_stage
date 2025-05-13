@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:intl/intl.dart';
 import 'package:news_lens/providers/locale_provider.dart';
@@ -33,7 +34,7 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
   late String _summary;
   late String _displayTitle;
   final _openAi = OpenAI.instance.build(
-    token: OPENAI_API_KEY,
+    token: dotenv.env[OPENAI_API_KEY],
     baseOption: HttpSetup(receiveTimeout: const Duration(seconds: 30)),
     enableLog: true,
   );

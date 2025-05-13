@@ -1,6 +1,7 @@
 import 'package:chat_gpt_sdk/chat_gpt_sdk.dart';
 import 'package:dash_chat_2/dash_chat_2.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:news_lens/consts.dart';
 import 'package:news_lens/models/news_class.dart';
 import 'package:news_lens/presentation/screens/details/news_details.dart';
@@ -19,7 +20,7 @@ class MultiNewsChatbot extends StatefulWidget {
 
 class _MultiNewsChatbotState extends State<MultiNewsChatbot> {
   final _openAi = OpenAI.instance.build(
-    token: OPENAI_API_KEY,
+    token: dotenv.env[OPENAI_API_KEY],
     baseOption: HttpSetup(
       receiveTimeout: const Duration(seconds: 60),
     ),
