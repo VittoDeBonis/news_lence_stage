@@ -11,7 +11,7 @@ import 'package:news_lens/presentation/screens/details/news_details.dart';
 import 'package:news_lens/providers/news_provider.dart';
 import 'package:chat_gpt_sdk/chat_gpt_sdk.dart';
 import 'package:dash_chat_2/dash_chat_2.dart';
-import 'package:news_lens/consts.dart';
+
 
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});

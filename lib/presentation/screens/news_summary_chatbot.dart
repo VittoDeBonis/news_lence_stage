@@ -8,7 +8,7 @@ import 'package:translator/translator.dart';
 import 'package:provider/provider.dart';
 import 'package:news_lens/models/news_class.dart';
 import 'package:chat_gpt_sdk/chat_gpt_sdk.dart';
-import 'package:news_lens/consts.dart';
+
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -34,7 +34,7 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
   late String _summary;
   late String _displayTitle;
   final _openAi = OpenAI.instance.build(
-    token: dotenv.env[OPENAI_API_KEY],
+    token: dotenv.env['OPENAI_API_KEY'],
     baseOption: HttpSetup(receiveTimeout: const Duration(seconds: 30)),
     enableLog: true,
   );
