@@ -10,6 +10,11 @@ import 'package:news_lens/models/news_class.dart';
 import 'package:chat_gpt_sdk/chat_gpt_sdk.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:open_file/open_file.dart'; 
+import 'dart:io';
+import 'package:path_provider/path_provider.dart' as path_provider;
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
 
 class NewsSummaryChatbot extends StatefulWidget {
   final News news;
@@ -620,6 +625,69 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
       }
     );
   }
+
+   Future<void> _generateAndSavePdf() async {
+  setState(() {
+    _isProcessing = true;
+  });
+  try {
+    //Creazione del documento PDF
+    final pdf = pw.Document();
+     
+    // Aggiungi una pagina con una scritta "ciao"
+    pdf.addPage(
+      pw.Page(
+        build: (pw.Context context) => pw.Center(
+          child: pw.Text('Hello user')
+        )
+      )
+    );
+    // Ottieni la directory per salvare il file
+    final output = await path_provider.getApplicationDocumentsDirectory();
+    final fileName = 'ciao_${DateTime.now().millisecondsSinceEpoch}.pdf';
+    final file = File('${output.path}/$fileName');
+
+    await file.writeAsBytes(await pdf.save());
+
+    if (mounted) {
+      setState(() {
+        _isProcessing = false;
+      });
+      
+      // Notifica all'utente che il download è avvenuto con successo
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('PDF salvato in: ${file.path}'),
+          duration: const Duration(seconds: 5),
+          action: SnackBarAction(
+            label: 'Apri',
+            onPressed: () {
+              OpenFile.open(file.path);
+            },
+          ),
+        ),
+      );
+      await OpenFile.open(file.path);
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print('Errore durante la creazione del PDF: $e');
+    }
+    
+    if (mounted) {
+      setState(() {
+        _isProcessing = false;
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Errore nel salvataggio del PDF: ${e.toString()}'),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+}
   
   @override
   Widget build(BuildContext context) {
@@ -706,39 +774,66 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
                   ),
             ),
             const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+            Column(
               children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                        _speak();
+                      },
+                      icon: Icon(
+                        _isSpeaking ? Icons.stop : Icons.campaign,
+                        color: _isSpeaking ? Colors.red : Colors.blue,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: _isTranslating ? null : _translateSummary,
+                      icon: _isTranslating
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Icon(
+                              Icons.translate,
+                              color: _isTranslated ? Colors.green : Colors.blue,
+                            ),
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        _showRatingDialog();
+                      },
+                      icon: const Icon(Icons.rate_review, color: Colors.blue),
+                    ),
+                                
+                  ],
+                ),
+                SizedBox(height: 20,),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    IconButton(
+                  onPressed: _isProcessing ? null : _generateAndSavePdf,
+                  icon: _isProcessing
+                  ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                  : const Icon(Icons.picture_as_pdf, color: Colors.blue),
+                ),
                 IconButton(
-                  onPressed: () {
-                    _speak();
+                  onPressed: (){
+                    
                   },
-                  icon: Icon(
-                    _isSpeaking ? Icons.stop : Icons.campaign,
-                    color: _isSpeaking ? Colors.red : Colors.blue,
-                  ),
-                ),
-                IconButton(
-                  onPressed: _isTranslating ? null : _translateSummary,
-                  icon: _isTranslating
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Icon(
-                          Icons.translate,
-                          color: _isTranslated ? Colors.green : Colors.blue,
-                        ),
-                ),
-                IconButton(
-                  onPressed: () {
-                    _showRatingDialog();
-                  },
-                  icon: const Icon(Icons.rate_review, color: Colors.blue),
-                ),
+                  icon: const Icon(Icons.share, color: Colors.blue,)
+                ), 
+                  ],
+                )
               ],
-            ),
+            )
           ],
         ),
       ),
