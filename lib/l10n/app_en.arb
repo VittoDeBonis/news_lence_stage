@@ -27,5 +27,11 @@
   "cancel": "Cancel",
   "save": "Save",
   "interests": "Interests",
+  "stop": "Stop"
+  "listen": "Listen"
+  "traduction": "Traduction"
+  "rate summary": "Rate summary"
+  "save PDF": "Save PDF"
+  "share PDF": "Share PDF"
   "defaultNickname": "User"
 }
