@@ -938,33 +938,48 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    IconButton(
-                      onPressed: () {
-                        _speak();
-                      },
-                      icon: Icon(
-                        _isSpeaking ? Icons.stop : Icons.campaign,
-                        color: _isSpeaking ? Colors.red : Colors.blue,
-                      ),
+                    Column(
+                      children: [
+                        IconButton(
+                          onPressed: () {
+                            _speak();
+                          },
+                          icon: Icon(
+                            _isSpeaking ? Icons.stop : Icons.campaign,
+                            color: _isSpeaking ? Colors.red : Colors.blue,
+                          ),
+                        ),
+                        Text(_isSpeaking ? "Stop" : "Listen"),
+                      ],
                     ),
-                    IconButton(
-                      onPressed: _isTranslating ? null : _translateSummary,
-                      icon: _isTranslating
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Icon(
-                              Icons.translate,
-                              color: _isTranslated ? Colors.green : Colors.blue,
-                            ),
+                    Column(
+                      children: [
+                        IconButton(
+                          onPressed: _isTranslating ? null : _translateSummary,
+                          icon: _isTranslating
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : Icon(
+                                  Icons.translate,
+                                  color: _isTranslated ? Colors.green : Colors.blue,
+                                ),
+                        ),
+                        Text('Traduction')
+                      ],
                     ),
-                    IconButton(
-                      onPressed: () {
-                        _showRatingDialog();
-                      },
-                      icon: const Icon(Icons.rate_review, color: Colors.blue),
+                    Column(
+                      children: [
+                        IconButton(
+                          onPressed: () {
+                            _showRatingDialog();
+                          },
+                          icon: const Icon(Icons.rate_review, color: Colors.blue),
+                        ),
+                        Text('Rate Summary')
+                      ],
                     ),
                   ],
                 ),
@@ -972,21 +987,31 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    IconButton(
-                      onPressed: _isProcessing ? null : _generateAndSavePdf,
-                      icon: _isProcessing
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.picture_as_pdf, color: Colors.blue),
+                    Column(
+                      children: [
+                        IconButton(
+                          onPressed: _isProcessing ? null : _generateAndSavePdf,
+                          icon: _isProcessing
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.picture_as_pdf, color: Colors.blue),
+                        ),
+                        Text('Save PDF')
+                      ],
                     ),
-                    IconButton(
-                      onPressed: (){
-                        _generateAndSharePdf();
-                      },
-                      icon: const Icon(Icons.share, color: Colors.blue,)
+                    Column(
+                      children: [
+                        IconButton(
+                          onPressed: (){
+                            _generateAndSharePdf();
+                          },
+                          icon: const Icon(Icons.share, color: Colors.blue,)
+                        ),
+                        Text('Share PDF')
+                      ],
                     ), 
                   ],
                 )
