@@ -210,7 +210,7 @@ class _SettingsTabState extends State<SettingsTab> {
                     await preSettings.savePreferences();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('settingsSaved'), // Replace with an existing key
+                        content: Text('settings saved'), // Replace with an existing key
                         duration: const Duration(seconds: 2),
                       ),
                     );
