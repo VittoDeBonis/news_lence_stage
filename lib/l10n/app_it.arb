@@ -26,5 +26,11 @@
   "save": "Salva",
   "preferencesSaved": "Preferences saved successfully",
   "interests": "Interests",
+  "stop": "Interrompi"
+  "listen": "Ascolta"
+  "traduction": "Traduci"
+  "rate summary": "Vota il riassunto"
+  "save PDF": "Salva il PDF"
+  "share PDF": "Condividi il PDF"
   "defaultNickname": "User"
 }
