@@ -21,7 +21,6 @@ class NewsSummaryChatbot extends StatefulWidget {
   final News news;
   final String initialSummary;
   final bool isDialog;
-
   const NewsSummaryChatbot({
     super.key,
     required this.news,
@@ -55,7 +54,6 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
   bool _isTranslated = false;
   bool _isProcessing = false;
   bool _showLoadingIndicator = false;
-
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
@@ -67,7 +65,6 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
     _displayTitle = widget.news.title;
     _originalTitle = widget.news.title;
     _initTts();
-    
     if (widget.initialSummary.isEmpty) {
       setState(() {
         _showLoadingIndicator = true;
@@ -76,32 +73,67 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
     }
   }
 
+  Future<void> _logSummaryGenerationActivity() async {
+    try {
+      final User? user = _auth.currentUser;
+      if (user == null) {
+        if (kDebugMode) {
+          print("Cannot log activity: No user logged in");
+        }
+        return;
+      }
+      
+      final activityData = {
+        'userId': user.uid,
+        'activityType': 'summary_generated',
+        'newsId': widget.news.id,
+        'newsTitle': widget.news.title,
+        'description': 'User requested summary generation for news article',
+        'timestamp': FieldValue.serverTimestamp(),
+      };
+      
+      await _firestore.collection('activity_logs').add(activityData);
+      
+      if (kDebugMode) {
+        print("Activity logged successfully");
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error logging activity: $e");
+      }
+    }
+  }
 
   void _generateInitialSummary() async {
     if (_isProcessing) return;
+    
+    // Log that the user requested a summary generation
+    await _logSummaryGenerationActivity();
+    
     setState(() {
       _isProcessing = true;
       _showLoadingIndicator = true;
     });
+    
     try {
       final request = ChatCompleteText(
         model: Gpt4oMiniChatModel(),
         messages: [
           {
             "role": "system",
-            "content":
-                "You are a helpful assistant that summarizes news articles.",
+            "content": "You are a helpful assistant that summarizes news articles.",
           },
           {
             "role": "user",
-            "content":
-                "Please summarize this news article in 5-6 sentences in the same language as written. Title: ${widget.news.title}. Content: ${widget.news.content ?? 'No content available'}",
+            "content": "Please summarize this news article in 5-6 sentences in the same language as written. Title: ${widget.news.title}. Content: ${widget.news.content ?? 'No content available'}",
           },
         ],
         maxToken: 300,
       );
+      
       final response = await _openAi.onChatCompletion(request: request);
       String responseText;
+      
       if (response != null &&
           response.choices.isNotEmpty &&
           response.choices.first.message != null) {
@@ -109,6 +141,7 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
       } else {
         responseText = "Unable to generate a summary for this article.";
       }
+      
       if (mounted) {
         setState(() {
           _summary = responseText;
@@ -116,12 +149,14 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
           _isProcessing = false;
           _showLoadingIndicator = false;
         });
+        
         _saveSummaryToFirebase(responseText);
       }
     } catch (e) {
       if (kDebugMode) {
         print("Error generating summary: $e");
       }
+      
       if (mounted) {
         setState(() {
           _summary = "Sorry, I couldn't summarize this article.";
@@ -132,20 +167,19 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
       }
     }
   }
-  // Metodo per verificare se esiste già un riassunto
+
   Future<void> _checkExistingSummaryOrGenerate() async {
     try {
-      // Controlla se esiste già un riassunto per questa news
       final QuerySnapshot summarySnapshot = await _firestore
           .collection('news_summaries')
           .where('newsTitle', isEqualTo: widget.news.title)
           .where('language', isEqualTo: 'original')
           .limit(1)
           .get();
-
+          
       if (summarySnapshot.docs.isNotEmpty) {
-        // Riassunto trovato, si usa quello esistente
         final existingSummary = summarySnapshot.docs.first.data() as Map<String, dynamic>;
+        
         if (mounted) {
           setState(() {
             _summary = existingSummary['summary'] as String;
@@ -153,6 +187,9 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
             _showLoadingIndicator = false;
             _isProcessing = false;
           });
+          
+          // Still log that a summary was requested, but mention it was existing
+          await _logSummaryGenerationActivity();
           
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -162,14 +199,12 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
           );
         }
       } else {
-        // Nessun riassunto trovato, generare uno nuovo
         _generateInitialSummary();
       }
     } catch (e) {
       if (kDebugMode) {
         print("Error in checking existing summaries: $e");
       }
-      // In caso di errore, procedere con la generazione
       _generateInitialSummary();
     }
   }
@@ -206,7 +241,7 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
     }
     return 'N/A';
   }
-  
+
   Future<void> _saveSummaryToFirebase(String summary, {bool isRegeneratedSummary = false}) async {
     try{
       final User? user = _auth.currentUser;
@@ -214,7 +249,7 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
         print("Cannot save the summary: No user logged in");
         return;
       }
-
+      
       final summaryData = {
         'userId': user.uid,
         'newsId': widget.news.id,        
@@ -231,14 +266,13 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
         'url': widget.news.url,
         'isRegeneratedSummary': isRegeneratedSummary, 
       };
-      await _firestore
-        .collection('news_summaries')
-        .add(summaryData);
+      
+      await _firestore.collection('news_summaries').add(summaryData);
       
       if (kDebugMode) {
         print("Summary saved successfully");
       }
-
+      
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Summary saved successfully"),
@@ -249,9 +283,10 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
       if(kDebugMode){
         print("Error saving summary to firebase: $e");
       }
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error saving summary: ${e.toString()}")),
-        );
+      );
     }
   }
 
@@ -354,7 +389,7 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
       });
     }
   }
-  
+
   void _translateSummary() async {
     if (_isTranslated) {
       setState(() {
@@ -370,7 +405,6 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
       );
       return;
     }
-
     final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
     final String targetLanguage = localeProvider.locale.languageCode;
     if (kDebugMode) {
@@ -379,7 +413,6 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
     if (kDebugMode) {
       print("Target language for translation: ${targetLanguage}");
     }
-
     try {
       final QuerySnapshot translatedSnapshot = await _firestore
           .collection('news_summaries')
@@ -387,7 +420,6 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
           .where('language', isEqualTo: targetLanguage)
           .limit(1)
           .get();
-
       if (translatedSnapshot.docs.isNotEmpty) {
         final existingTranslation = translatedSnapshot.docs.first.data() as Map<String, dynamic>;
         if (mounted) {
@@ -401,7 +433,6 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
             _isTranslating = false;
             _isTranslated = true;
           });
-          
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text("Using an existing translation ${targetLanguage.toUpperCase()}"),
@@ -416,7 +447,6 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
         print("Error in checking existing translations: $e");
       }
     }
-
     setState(() {
       _isTranslating = true;
     });
@@ -440,7 +470,6 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
           _isTranslating = false;
           _isTranslated = true;
         });
-       
         _saveSummaryToFirebase(translatedSummary.text);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -472,8 +501,7 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
     flutterTts.stop();
     super.dispose();
   }
-  
-  //metodo per cercare un riassunto rigenerato esistente
+
   Future<String?> _checkForExistingRegeneratedSummary() async {
     try {
       final QuerySnapshot regeneratedSnapshot = await _firestore
@@ -483,7 +511,6 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
           .where('isRegeneratedSummary', isEqualTo: true)
           .limit(1)
           .get();
-          
       if (regeneratedSnapshot.docs.isNotEmpty) {
         final existingRegeneratedSummary = regeneratedSnapshot.docs.first.data() as Map<String, dynamic>;
         return existingRegeneratedSummary['summary'] as String;
@@ -497,18 +524,15 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
     }
   }
 
-  // Metodo per rigenerare un riassunto
   Future<void> _regenerateSummary() async {
     setState(() {
       _isProcessing = true;
       _showLoadingIndicator = true;
     });
     
-    // Prima, controlla se esiste già un riassunto rigenerato
     final existingRegeneratedSummary = await _checkForExistingRegeneratedSummary();
     
     if (existingRegeneratedSummary != null) {
-      // Usa il riassunto rigenerato esistente
       if (mounted) {
         setState(() {
           _summary = existingRegeneratedSummary;
@@ -516,7 +540,6 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
           _isProcessing = false;
           _showLoadingIndicator = false;
         });
-        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Using an existing regenerated summary"),
@@ -525,26 +548,25 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
         );
       }
     } else {
-      // Genera un nuovo riassunto
       try {
         final request = ChatCompleteText(
           model: Gpt4oMiniChatModel(),
           messages: [
             {
               "role": "system",
-              "content":
-                  "You are a helpful assistant that summarizes news articles. The previous summary was rated poorly, please create a more accurate and concise summary.",
+              "content": "You are a helpful assistant that summarizes news articles. The previous summary was rated poorly, please create a more accurate and concise summary.",
             },
             {
               "role": "user",
-              "content":
-                  "Please create a better summary for this news article in 5-6 sentences in the same language as written. Title: ${widget.news.title}. Content: ${widget.news.content ?? 'No content available'}",
+              "content": "Please create a better summary for this news article in 5-6 sentences in the same language as written. Title: ${widget.news.title}. Content: ${widget.news.content ?? 'No content available'}",
             },
           ],
           maxToken: 300,
         );
+        
         final response = await _openAi.onChatCompletion(request: request);
         String responseText;
+        
         if (response != null &&
             response.choices.isNotEmpty &&
             response.choices.first.message != null) {
@@ -552,6 +574,7 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
         } else {
           responseText = "Unable to generate a better summary for this article.";
         }
+        
         if (mounted) {
           setState(() {
             _summary = responseText;
@@ -560,7 +583,6 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
             _showLoadingIndicator = false;
           });
           
-          // Salva il riassunto rigenerato con il flag isRegeneratedSummary = true
           _saveSummaryToFirebase(responseText, isRegeneratedSummary: true);
           
           ScaffoldMessenger.of(context).showSnackBar(
@@ -627,216 +649,204 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
     );
   }
 
-   Future<void> _generateAndSavePdf() async {
-  setState(() {
-    _isProcessing = true;
-  });
-  try {
-    //Creazione del documento PDF
-    final pdf = pw.Document();
-     
-    // Aggiungi una pagina con una scritta "ciao"
-    pdf.addPage(
-      pw.Page(
-        build: (pw.Context context) => pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Text(
-              _displayTitle,
-              style: pw.TextStyle(
-                fontSize: 18,
-                fontWeight: pw.FontWeight.bold,
-              ),
-            ),
-            pw.SizedBox(height: 12),
-            pw.Text(
-              widget.news.source,
-              style: const pw.TextStyle(
-                fontSize: 14,
-              ),
-            ),
-            pw.SizedBox(height: 8),
-            pw.Row(
-              children: [
-                pw.Text(
-                  "Published: ${_formatDate(widget.news.publishedAt)}",
-                  style: const pw.TextStyle(
-                    fontSize: 12,
-                    color: PdfColors.grey700,
-                  ),
-                ),
-              ],
-            ),
-            pw.SizedBox(height: 16),
-            pw.Text(
-              'Summary',
-              style: pw.TextStyle(
-                fontSize: 16,
-                fontWeight: pw.FontWeight.bold,
-              ),
-            ),
-            pw.SizedBox(height: 8),
-            pw.Text(
-              _summary,
-              style: const pw.TextStyle(
-                fontSize: 12,
-                lineSpacing: 1.5,
-              ),
-            ),
-            pw.SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
-    // Ottieni la directory per salvare il file
-    final output = await path_provider.getApplicationDocumentsDirectory();
-    final fileName = 'ciao_${DateTime.now().millisecondsSinceEpoch}.pdf';
-    final file = File('${output.path}/$fileName');
-
-    await file.writeAsBytes(await pdf.save());
-
-    if (mounted) {
-      setState(() {
-        _isProcessing = false;
-      });
+  Future<void> _generateAndSavePdf() async {
+    setState(() {
+      _isProcessing = true;
+    });
+    
+    try {
+      final pdf = pw.Document();
       
-      // Notifica all'utente che il download è avvenuto con successo
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('PDF salvato in: ${file.path}'),
-          duration: const Duration(seconds: 5),
-          action: SnackBarAction(
-            label: 'Apri',
-            onPressed: () {
-              OpenFile.open(file.path);
-            },
+      pdf.addPage(
+        pw.Page(
+          build: (pw.Context context) => pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                _displayTitle,
+                style: pw.TextStyle(
+                  fontSize: 18,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.SizedBox(height: 12),
+              pw.Text(
+                widget.news.source,
+                style: const pw.TextStyle(
+                  fontSize: 14,
+                ),
+              ),
+              pw.SizedBox(height: 8),
+              pw.Row(
+                children: [
+                  pw.Text(
+                    "Published: ${_formatDate(widget.news.publishedAt)}",
+                    style: const pw.TextStyle(
+                      fontSize: 12,
+                      color: PdfColors.grey700,
+                    ),
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 16),
+              pw.Text(
+                'Summary',
+                style: pw.TextStyle(
+                  fontSize: 16,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.SizedBox(height: 8),
+              pw.Text(
+                _summary,
+                style: const pw.TextStyle(
+                  fontSize: 12,
+                  lineSpacing: 1.5,
+                ),
+              ),
+              pw.SizedBox(height: 20),
+            ],
           ),
         ),
       );
       
-    }
-  } catch (e) {
-    if (kDebugMode) {
-      print('Errore durante la creazione del PDF: $e');
-    }
-    
-    if (mounted) {
-      setState(() {
-        _isProcessing = false;
-      });
+      final output = await path_provider.getApplicationDocumentsDirectory();
+      final fileName = 'ciao_${DateTime.now().millisecondsSinceEpoch}.pdf';
+      final file = File('${output.path}/$fileName');
+      await file.writeAsBytes(await pdf.save());
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Errore nel salvataggio del PDF: ${e.toString()}'),
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('PDF salvato in: ${file.path}'),
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'Apri',
+              onPressed: () {
+                OpenFile.open(file.path);
+              },
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Errore durante la creazione del PDF: $e');
+      }
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Errore nel salvataggio del PDF: ${e.toString()}'),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
-}
 
-Future<void> _generateAndSharePdf() async {
-  setState(() {
-    _isProcessing = true;
-  });
-  try {
-    //Creare un documento PDF
-    final pdf = pw.Document();
+  Future<void> _generateAndSharePdf() async {
+    setState(() {
+      _isProcessing = true;
+    });
     
-    // Aggiungere una pagina con titolo, fonte, data e contenuto di sintesi
-    pdf.addPage(
-      pw.Page(
-        build: (pw.Context context) => pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Text(
-              _displayTitle,
-              style: pw.TextStyle(
-                fontSize: 18,
-                fontWeight: pw.FontWeight.bold,
-              ),
-            ),
-            pw.SizedBox(height: 12),
-            pw.Text(
-              widget.news.source,
-              style: const pw.TextStyle(
-                fontSize: 14,
-              ),
-            ),
-            pw.SizedBox(height: 8),
-            pw.Row(
-              children: [
-                pw.Text(
-                  "Published: ${_formatDate(widget.news.publishedAt)}",
-                  style: const pw.TextStyle(
-                    fontSize: 12,
-                    color: PdfColors.grey700,
-                  ),
+    try {
+      final pdf = pw.Document();
+      
+      pdf.addPage(
+        pw.Page(
+          build: (pw.Context context) => pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                _displayTitle,
+                style: pw.TextStyle(
+                  fontSize: 18,
+                  fontWeight: pw.FontWeight.bold,
                 ),
-              ],
-            ),
-            pw.SizedBox(height: 16),
-            pw.Text(
-              'Summary',
-              style: pw.TextStyle(
-                fontSize: 16,
-                fontWeight: pw.FontWeight.bold,
               ),
-            ),
-            pw.SizedBox(height: 8),
-            pw.Text(
-              _summary,
-              style: const pw.TextStyle(
-                fontSize: 12,
-                lineSpacing: 1.5,
+              pw.SizedBox(height: 12),
+              pw.Text(
+                widget.news.source,
+                style: const pw.TextStyle(
+                  fontSize: 14,
+                ),
               ),
-            ),
-            pw.SizedBox(height: 20),           
-          ],
-        ),
-      ),
-    );
-    
-    // Ottieni la directory per salvare il file temporaneamente
-    final output = await path_provider.getApplicationDocumentsDirectory();
-    final fileName = 'news_summary_${DateTime.now().millisecondsSinceEpoch}.pdf';
-    final filePath = '${output.path}/$fileName';
-    final file = File(filePath);
-
-    // Salva PDF nel file
-    await file.writeAsBytes(await pdf.save());
-
-    if (mounted) {
-      setState(() {
-        _isProcessing = false;
-      });
-      
-      // Condividere il file PDF
-      await Share.shareXFiles(
-        [XFile(filePath)],
-        text: 'News Summary: $_displayTitle',
-      );
-    }
-  } catch (e) {
-    if (kDebugMode) {
-      print('Error during PDF generation or sharing: $e');
-    }
-    
-    if (mounted) {
-      setState(() {
-        _isProcessing = false;
-      });
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error sharing PDF: ${e.toString()}'),
-          duration: const Duration(seconds: 3),
+              pw.SizedBox(height: 8),
+              pw.Row(
+                children: [
+                  pw.Text(
+                    "Published: ${_formatDate(widget.news.publishedAt)}",
+                    style: const pw.TextStyle(
+                      fontSize: 12,
+                      color: PdfColors.grey700,
+                    ),
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 16),
+              pw.Text(
+                'Summary',
+                style: pw.TextStyle(
+                  fontSize: 16,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.SizedBox(height: 8),
+              pw.Text(
+                _summary,
+                style: const pw.TextStyle(
+                  fontSize: 12,
+                  lineSpacing: 1.5,
+                ),
+              ),
+              pw.SizedBox(height: 20),           
+            ],
+          ),
         ),
       );
+      
+      final output = await path_provider.getApplicationDocumentsDirectory();
+      final fileName = 'news_summary_${DateTime.now().millisecondsSinceEpoch}.pdf';
+      final filePath = '${output.path}/$fileName';
+      final file = File(filePath);
+      
+      await file.writeAsBytes(await pdf.save());
+      
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+        
+        await Share.shareXFiles(
+          [XFile(filePath)],
+          text: 'News Summary: $_displayTitle',
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error during PDF generation or sharing: $e');
+      }
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error sharing PDF: ${e.toString()}'),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
-}
-  
+
   @override
   Widget build(BuildContext context) {
     if (_showLoadingIndicator) {
@@ -860,6 +870,7 @@ Future<void> _generateAndSharePdf() async {
         ),
       );
     }
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Summary'),
@@ -955,7 +966,6 @@ Future<void> _generateAndSharePdf() async {
                       },
                       icon: const Icon(Icons.rate_review, color: Colors.blue),
                     ),
-                                
                   ],
                 ),
                 const SizedBox(height: 20,),
@@ -963,21 +973,21 @@ Future<void> _generateAndSharePdf() async {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     IconButton(
-                  onPressed: _isProcessing ? null : _generateAndSavePdf,
-                  icon: _isProcessing
-                  ? const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                  : const Icon(Icons.picture_as_pdf, color: Colors.blue),
-                ),
-                IconButton(
-                  onPressed: (){
-                    _generateAndSharePdf();
-                  },
-                  icon: const Icon(Icons.share, color: Colors.blue,)
-                ), 
+                      onPressed: _isProcessing ? null : _generateAndSavePdf,
+                      icon: _isProcessing
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.picture_as_pdf, color: Colors.blue),
+                    ),
+                    IconButton(
+                      onPressed: (){
+                        _generateAndSharePdf();
+                      },
+                      icon: const Icon(Icons.share, color: Colors.blue,)
+                    ), 
                   ],
                 )
               ],

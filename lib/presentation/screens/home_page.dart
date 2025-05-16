@@ -33,7 +33,7 @@ class _HomePageState extends State<HomePage> {
           items:  [
             BottomNavigationBarItem(
               icon: const Icon(Icons.history_toggle_off),
-              label: l10n.priority,
+              label: l10n.cronology,
             ),
              BottomNavigationBarItem(
               icon: const Icon(Icons.home),
