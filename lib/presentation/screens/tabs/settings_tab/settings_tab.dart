@@ -71,16 +71,15 @@ class _SettingsTabState extends State<SettingsTab> {
                               fit: BoxFit.cover,
                             ),
                           )
-                        : Icon(
+                        : const Icon(
                             Icons.camera_alt,
                             size: 50,
-                            color: Theme.of(context).iconTheme.color,
+                            color: Colors.red,
                           ),
                   ),
                 ),
                 const SizedBox(height: 16),
 
-                // Nickname
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -92,18 +91,17 @@ class _SettingsTabState extends State<SettingsTab> {
                     ),
                     IconButton(
                       onPressed: _editNickname,
-                      icon: const Icon(Icons.edit),
+                      icon: const Icon(Icons.edit, color: Colors.red),
                     ),
                   ],
                 ),
                 const Divider(height: 1, thickness: 1),
                 const SizedBox(height: 16),
 
-                // Dark Mode Toggle
                 ListTile(
                   leading: Icon(
                     themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
-                    color: Theme.of(context).colorScheme.primary,
+                    color: Colors.red,
                   ),
                   title: Text(l10n.darkMode),
                   trailing: Switch(
@@ -111,14 +109,15 @@ class _SettingsTabState extends State<SettingsTab> {
                     onChanged: (value) {
                       themeProvider.toggleTheme(value);
                     },
+                    activeColor: Colors.red,
                   ),
                 ),
 
                 // Language Selection
                 ListTile(
-                  leading: Icon(
+                  leading: const Icon(
                     Icons.language,
-                    color: Theme.of(context).colorScheme.primary,
+                    color: Colors.red,
                   ),
                   title: Text(l10n.language),
                   trailing: DropdownButton<String>(
@@ -144,10 +143,10 @@ class _SettingsTabState extends State<SettingsTab> {
                 // Interests Section
                 Text(
                   l10n.interest,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
+                    color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -165,33 +164,35 @@ class _SettingsTabState extends State<SettingsTab> {
                   itemCount: preSettings.interestsList.length,
                   itemBuilder: (context, index) {
                     final interest = preSettings.interestsList[index];
+                    bool isSelected = preSettings.selectedInterests[interest] ?? false;
+
                     return Card(
                       elevation: 0,
-                      color: preSettings.selectedInterests[interest] == true
-                          ? Theme.of(context).colorScheme.primaryContainer
-                          : Theme.of(context).colorScheme.surfaceContainerHighest,
+                      color: isSelected ? Colors.redAccent : Colors.grey,
                       child: InkWell(
                         onTap: () {
-                          preSettings.toggleInterest(interest, !(preSettings.selectedInterests[interest] ?? false));
+                          preSettings.toggleInterest(interest, !isSelected);
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8.0),
                           child: Row(
                             children: [
                               Checkbox(
-                                value: preSettings.selectedInterests[interest] ?? false,
+                                value: isSelected,
                                 onChanged: (bool? value) {
-                                  preSettings.toggleInterest(interest, value!);
+                                  if (value != null) {
+                                    preSettings.toggleInterest(interest, value);
+                                  }
                                 },
+                                activeColor: Colors.red, 
                               ),
                               Expanded(
                                 child: Text(
                                   interest,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    fontWeight: preSettings.selectedInterests[interest] == true
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
+                                    color: isSelected ? Colors.white : Colors.black87,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                                   ),
                                 ),
                               ),
@@ -200,30 +201,30 @@ class _SettingsTabState extends State<SettingsTab> {
                         ),
                       ),
                     );
+              
                   },
                 ),
                 const SizedBox(height: 30),
                 
-                // Save Button
                 ElevatedButton(
                   onPressed: () async {
                     await preSettings.savePreferences();
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('settings saved'), // Replace with an existing key
-                        duration: const Duration(seconds: 2),
+                      const SnackBar(
+                        content: Text('settings saved'), 
+                        duration: Duration(seconds: 2),
                       ),
                     );
                   },
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     minimumSize: const Size(200, 48),
+                    foregroundColor: Colors.red
                   ),
                   child: Text(l10n.saveSettings),
                 ),
                 const SizedBox(height: 10),
 
-                // Logout Button
                 ElevatedButton(
                   onPressed: () async {
                     try {
@@ -238,6 +239,9 @@ class _SettingsTabState extends State<SettingsTab> {
                       );
                     }
                   },
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.red
+                  ),
                   child: Text(l10n.logout),
                 ),
                 const SizedBox(height: 15),
@@ -248,7 +252,7 @@ class _SettingsTabState extends State<SettingsTab> {
                   child: const Text(
                     'Delete account',
                     style: TextStyle(
-                      color: Colors.deepPurple,
+                      color: Colors.red,
                       decoration: TextDecoration.underline,
                     ),
                   ),
