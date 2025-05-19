@@ -918,8 +918,7 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
             ),
             Padding(
               padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Row(               
                 children: [
                   Text(
                     'Summary',
@@ -927,8 +926,9 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
                           fontWeight: FontWeight.bold,
                         ),
                   ),
+                  const SizedBox(width: 40),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       IconButton(
                         onPressed: () {
@@ -936,12 +936,11 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
                        },
                         icon: Icon(
                         _isSpeaking ? Icons.stop : Icons.campaign,
-                           color: _isSpeaking ? Colors.red : Colors.blue,
+                           color: _isSpeaking ? Colors.red : Colors.white,
                         ),
                       ),
-                    ],
-                  ),
-                  IconButton(
+                    const SizedBox(width:22),
+                    IconButton(
                     onPressed: _isTranslating ? null : _translateSummary,
                       icon: _isTranslating
                         ? const SizedBox(
@@ -951,8 +950,10 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
                         )
                         : Icon(
                         Icons.translate,
-                        color: _isTranslated ? Colors.green : Colors.blue,
+                        color: _isTranslated ? Colors.green : Colors.white,
                         ),
+                    ),
+                  ],
                   ),
                 ], 
               ),
@@ -963,7 +964,7 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
                     height: 1.5,
                   ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 45),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
@@ -973,7 +974,7 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
                       onPressed: () {
                       _showRatingDialog();
                       },
-                      icon: const Icon(Icons.rate_review, color: Colors.blue),
+                      icon: const Icon(Icons.rate_review, color: Colors.white),
                     ),
                     const Text('Rate Summary')
                   ],
@@ -988,7 +989,7 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
                           height: 24,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                        : const Icon(Icons.picture_as_pdf, color: Colors.blue),
+                        : const Icon(Icons.picture_as_pdf, color: Colors.white),
                     ),
                     const Text('Save PDF')
                   ],
@@ -999,7 +1000,7 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
                       onPressed: () {
                       _generateAndSharePdf();
                       },
-                      icon: const Icon(Icons.share, color: Colors.blue),
+                      icon: const Icon(Icons.share, color: Colors.white),
                     ),
                     const Text('Share PDF')
                   ],
