@@ -46,7 +46,7 @@ class _HomePageState extends State<HomePage> {
              
             
           ],
-          selectedItemColor: isDarkMode? Colors.red : Colors.black,
+          selectedItemColor: isDarkMode? Colors.yellow[200] : Colors.black,
         ),
     );
   }
