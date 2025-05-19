@@ -518,7 +518,7 @@ class _HomeTabState extends State<HomeTab> {
       }
     });
   }
-  
+  //Ma perche se io faccio rigenrazione o rating o traduzione... me li ritrovo tutti come summary generato? voglio che ogni azione abbia la sua card personalizzata. Quindi ad esempio per il summary generato va bene, se invece rigenero il summary deve esserci scritto ad esempio Sommario tradotto. dimmmi tutte le modifiche che devo apportare
   void _handleCategoryTap(String category) {
     // Se è già selezionata la stessa categoria, non fa nulla
     if (_selectedCategory == category) return;
