@@ -107,7 +107,7 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
   void _generateInitialSummary() async {
     if (_isProcessing) return;
     
-    // Log that the user requested a summary generation
+    // Registra che l'utente ha richiesto una generazione di riepilogo
     await _logSummaryGenerationActivity();
     
     setState(() {
@@ -188,7 +188,6 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
             _isProcessing = false;
           });
           
-          // Still log that a summary was requested, but mention it was existing
           await _logSummaryGenerationActivity();
           
           ScaffoldMessenger.of(context).showSnackBar(
@@ -919,11 +918,43 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
             ),
             Padding(
               padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
-              child: Text(
-                'Summary',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Summary',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                         _speak();
+                       },
+                        icon: Icon(
+                        _isSpeaking ? Icons.stop : Icons.campaign,
+                           color: _isSpeaking ? Colors.red : Colors.blue,
+                        ),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    onPressed: _isTranslating ? null : _translateSummary,
+                      icon: _isTranslating
+                        ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : Icon(
+                        Icons.translate,
+                        color: _isTranslated ? Colors.green : Colors.blue,
+                        ),
+                  ),
+                ], 
               ),
             ),
             Text(
@@ -933,88 +964,46 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
                   ),
             ),
             const SizedBox(height: 16),
-            Column(
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                Column(
                   children: [
-                    Column(
-                      children: [
-                        IconButton(
-                          onPressed: () {
-                            _speak();
-                          },
-                          icon: Icon(
-                            _isSpeaking ? Icons.stop : Icons.campaign,
-                            color: _isSpeaking ? Colors.red : Colors.blue,
-                          ),
-                        ),
-                        Text(_isSpeaking ? "Stop" : "Listen"),
-                      ],
+                    IconButton(
+                      onPressed: () {
+                      _showRatingDialog();
+                      },
+                      icon: const Icon(Icons.rate_review, color: Colors.blue),
                     ),
-                    Column(
-                      children: [
-                        IconButton(
-                          onPressed: _isTranslating ? null : _translateSummary,
-                          icon: _isTranslating
-                              ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : Icon(
-                                  Icons.translate,
-                                  color: _isTranslated ? Colors.green : Colors.blue,
-                                ),
-                        ),
-                        Text('Traduction')
-                      ],
-                    ),
-                    Column(
-                      children: [
-                        IconButton(
-                          onPressed: () {
-                            _showRatingDialog();
-                          },
-                          icon: const Icon(Icons.rate_review, color: Colors.blue),
-                        ),
-                        Text('Rate Summary')
-                      ],
-                    ),
+                    const Text('Rate Summary')
                   ],
                 ),
-                const SizedBox(height: 20,),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                Column(
                   children: [
-                    Column(
-                      children: [
-                        IconButton(
-                          onPressed: _isProcessing ? null : _generateAndSavePdf,
-                          icon: _isProcessing
-                              ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : const Icon(Icons.picture_as_pdf, color: Colors.blue),
-                        ),
-                        Text('Save PDF')
-                      ],
+                    IconButton(
+                      onPressed: _isProcessing ? null : _generateAndSavePdf,
+                      icon: _isProcessing
+                        ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : const Icon(Icons.picture_as_pdf, color: Colors.blue),
                     ),
-                    Column(
-                      children: [
-                        IconButton(
-                          onPressed: (){
-                            _generateAndSharePdf();
-                          },
-                          icon: const Icon(Icons.share, color: Colors.blue,)
-                        ),
-                        Text('Share PDF')
-                      ],
-                    ), 
+                    const Text('Save PDF')
                   ],
-                )
+                ),
+                Column(
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                      _generateAndSharePdf();
+                      },
+                      icon: const Icon(Icons.share, color: Colors.blue),
+                    ),
+                    const Text('Share PDF')
+                  ],
+                ),
               ],
             )
           ],
