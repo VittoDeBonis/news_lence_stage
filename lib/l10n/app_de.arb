@@ -26,11 +26,11 @@
   "save": "Speichern",
   "preferencesSaved": "Einstellungen erfolgreich gespeichert",
   "interests": "Interessen",
-  "stop": "Aufhören"
-  "listen": "Hören"
-  "traduction": "Traduction"
-  "rate summary": "Rate Zusammenfassung"
-  "save PDF": "PDF speichern"
-  "share PDF": "PDF teilen"
+  "stop": "Aufhören",
+  "listen": "Hören",
+  "traduction": "Traduction",
+  "rate summary": "Rate Zusammenfassung",
+  "save PDF": "PDF speichern",
+  "share PDF": "PDF teilen",
   "defaultNickname": "Benutzer"
 }

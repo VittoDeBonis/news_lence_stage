@@ -18,7 +18,6 @@
   "login": "Login",
   "logout": "Logout",
   "cronology": "Chronologie",
-  "cronology": "Cronology",
   "home": "Home",
   "settings": "Settings",
   "language": "Language",
@@ -27,11 +26,11 @@
   "cancel": "Cancel",
   "save": "Save",
   "interests": "Interests",
-  "stop": "Stop"
-  "listen": "Listen"
-  "traduction": "Traduction"
-  "rate summary": "Rate summary"
-  "save PDF": "Save PDF"
-  "share PDF": "Share PDF"
+  "stop": "Stop",
+  "listen": "Listen",
+  "traduction": "Traduction",
+  "rateSummary": "Rate summary",
+  "savePdf": "Save PDF",
+  "sharePdf": "Share PDF",
   "defaultNickname": "User"
 }

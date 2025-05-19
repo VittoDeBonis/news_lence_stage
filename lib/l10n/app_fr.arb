@@ -26,11 +26,11 @@
   "save": "Sauvegarder",
   "preferencesSaved": "Préférences enregistrées avec succès",
   "interests": "Intérêts",
-  "stop": "Arrêter"
-  "listen": "Ecouter"
-  "traduction": "Préface"
-  "rate summary": "Taux résumé"
-  "save PDF": "Enregistrer au format PDF"
-  "share PDF": "Partager PDF"
+  "stop": "Arrêter",
+  "listen": "Ecouter",
+  "traduction": "Préface",
+  "rate summary": "Taux résumé",
+  "save PDF": "Enregistrer au format PDF",
+  "share PDF": "Partager PDF",
   "defaultNickname": "Utilisateur"
 }
