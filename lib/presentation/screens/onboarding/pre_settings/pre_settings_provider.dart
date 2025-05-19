@@ -5,12 +5,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path/path.dart' as path;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path_provider/path_provider.dart';
 
 class PreSettingsProvider extends ChangeNotifier {
   File? image;
   String? userId;
   String userEmail = '';
   String nickname = '';
+  String? localImagePath; // Nuovo campo per il path locale
   List<String> languageList = ['EN', 'IT', 'DE', 'FR'];
   String selectedLanguage = 'EN';
   List<String> interestsList = ['Politics', 'Sports', 'Science', 'Technology'];
@@ -41,10 +44,42 @@ class PreSettingsProvider extends ChangeNotifier {
     return '';
   }
 
+  // Metodo per ottenere il path locale dell'immagine salvato in SharedPreferences
+  Future<String?> getLocalImagePath() async {
+    if (userId == null) return null;
+    
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString('profile_image_path_$userId');
+  }
+
+  // Metodo per salvare il path locale dell'immagine in SharedPreferences
+  Future<void> saveLocalImagePath(String path) async {
+    if (userId == null) return;
+    
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('profile_image_path_$userId', path);
+    localImagePath = path;
+  }
+
+  // Metodo per rimuovere il path locale dell'immagine da SharedPreferences
+  Future<void> removeLocalImagePath() async {
+    if (userId == null) return;
+    
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove('profile_image_path_$userId');
+    localImagePath = null;
+  }
+
   Future<void> loadUserData() async {
     if (userId == null) return;
 
     try {
+      // Carica il path locale dell'immagine
+      localImagePath = await getLocalImagePath();
+      if (localImagePath != null && File(localImagePath!).existsSync()) {
+        image = File(localImagePath!);
+      }
+
       // Ottieni il documento dell'utente da Firestore
       DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
       
@@ -81,13 +116,10 @@ class PreSettingsProvider extends ChangeNotifier {
           }
         }
         
-        // Carica immagine profilo
-        if (userData['profileImageUrl'] != null) {
-          String imageUrl = userData['profileImageUrl'];
-          // Per caricare l'immagine effettivamente bisognerebbe utilizzare
-          // un approccio diverso, ad esempio salvarla temporaneamente o usare CachedNetworkImage
-          // Qui andresti a recuperare l'immagine da Firebase Storage, ma per ora
-          // lasciamo questo commento per indicare che andrebbe implementato
+        // Se non c'è un'immagine locale ma c'è un URL su Firestore,
+        // scarica l'immagine e salvala localmente
+        if (image == null && userData['profileImageUrl'] != null) {
+          await _downloadAndSaveImage(userData['profileImageUrl']);
         }
       } else {
         // Se l'utente non esiste, inizializza i valori di default
@@ -115,6 +147,32 @@ class PreSettingsProvider extends ChangeNotifier {
     } catch (e) {
       if (kDebugMode) {
         print('Errore nel caricamento dei dati: $e');
+      }
+    }
+  }
+
+  // Metodo per scaricare l'immagine da Firebase Storage e salvarla localmente
+  Future<void> _downloadAndSaveImage(String imageUrl) async {
+    try {
+      // Ottieni la directory dei documenti dell'app
+      Directory appDocDir = await getApplicationDocumentsDirectory();
+      String localPath = path.join(appDocDir.path, 'profile_images', 'profile_$userId.jpg');
+      
+      // Crea la directory se non esiste
+      Directory(path.dirname(localPath)).createSync(recursive: true);
+      
+      // Scarica l'immagine (questo è un esempio semplificato, 
+      // potresti voler usare una libreria come http per il download)
+      Reference storageRef = _storage.refFromURL(imageUrl);
+      await storageRef.writeToFile(File(localPath));
+      
+      // Salva il path locale
+      await saveLocalImagePath(localPath);
+      image = File(localPath);
+      
+    } catch (e) {
+      if (kDebugMode) {
+        print('Errore nel download dell\'immagine: $e');
       }
     }
   }
@@ -160,38 +218,38 @@ class PreSettingsProvider extends ChangeNotifier {
   }
 
   Future<void> savePreferences() async {
-  if (userId == null) return;
-  
-  try {
-    // Prepara la lista degli interessi selezionati
-    List<String> userInterests = [];
-    selectedInterests.forEach((interest, isSelected) {
-      if (isSelected) {
-        userInterests.add(interest);
+    if (userId == null) return;
+    
+    try {
+      // Prepara la lista degli interessi selezionati
+      List<String> userInterests = [];
+      selectedInterests.forEach((interest, isSelected) {
+        if (isSelected) {
+          userInterests.add(interest);
+        }
+      });
+      
+      // Prepara i dati da salvare
+      Map<String, dynamic> userData = {
+        'nickname': nickname.isEmpty ? getUserNameFromEmail() : nickname,
+        'language': selectedLanguage,
+        'interests': userInterests,
+        'updatedAt': FieldValue.serverTimestamp()
+      };
+      
+      // Salva i dati su Firestore
+      await _firestore.collection('users').doc(userId).set(userData, SetOptions(merge: true));
+      
+      if (nickname.isEmpty) {
+        nickname = getUserNameFromEmail();
+        notifyListeners();
       }
-    });
-    
-    // Prepara i dati da salvare
-    Map<String, dynamic> userData = {
-      'nickname': nickname.isEmpty ? getUserNameFromEmail() : nickname,
-      'language': selectedLanguage,
-      'interests': userInterests,
-      'updatedAt': FieldValue.serverTimestamp()
-    };
-    
-    // Salva i dati su Firestore
-    await _firestore.collection('users').doc(userId).set(userData, SetOptions(merge: true));
-    
-    if (nickname.isEmpty) {
-      nickname = getUserNameFromEmail();
-      notifyListeners();
-    }
-  } catch (e) {
-    if (kDebugMode) {
-      print('Errore nel salvataggio delle preferenze: $e');
+    } catch (e) {
+      if (kDebugMode) {
+        print('Errore nel salvataggio delle preferenze: $e');
+      }
     }
   }
-}
 
   Future<void> getImage() async {
     final picker = ImagePicker();
@@ -199,13 +257,26 @@ class PreSettingsProvider extends ChangeNotifier {
 
     if (pickedFile != null && userId != null) {
       try {
-        // Carica l'immagine su Firebase Storage
+        // Ottieni la directory dei documenti dell'app
+        Directory appDocDir = await getApplicationDocumentsDirectory();
+        String localPath = path.join(appDocDir.path, 'profile_images', 'profile_$userId.jpg');
+        
+        // Crea la directory se non esiste
+        Directory(path.dirname(localPath)).createSync(recursive: true);
+        
+        // Copia l'immagine selezionata nella directory locale
         File imageFile = File(pickedFile.path);
+        File localImageFile = await imageFile.copy(localPath);
+        
+        // Salva il path locale
+        await saveLocalImagePath(localPath);
+        
+        // Carica l'immagine su Firebase Storage
         String fileName = 'profile_${userId}_${DateTime.now().millisecondsSinceEpoch}${path.extension(pickedFile.path)}';
         Reference storageRef = _storage.ref().child('profile_images/$fileName');
         
         // Inizia il caricamento
-        await storageRef.putFile(imageFile);
+        await storageRef.putFile(localImageFile);
         
         // Ottieni l'URL dell'immagine
         String imageUrl = await storageRef.getDownloadURL();
@@ -216,7 +287,7 @@ class PreSettingsProvider extends ChangeNotifier {
         });
         
         // Aggiorna l'immagine locale
-        image = imageFile;
+        image = localImageFile;
         notifyListeners();
       } catch (e) {
         if (kDebugMode) {
@@ -234,6 +305,12 @@ class PreSettingsProvider extends ChangeNotifier {
     if (userId == null) return;
     
     try {
+      // Rimuovi l'immagine locale
+      if (localImagePath != null && File(localImagePath!).existsSync()) {
+        await File(localImagePath!).delete();
+      }
+      await removeLocalImagePath();
+      
       // Ottieni il documento utente per verificare se ha un'immagine
       DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
       
@@ -265,5 +342,15 @@ class PreSettingsProvider extends ChangeNotifier {
         print('Errore nella rimozione dell\'immagine: $e');
       }
     }
+  }
+
+  // Metodo getter per ottenere l'immagine corrente
+  File? getCurrentImage() {
+    return image;
+  }
+
+  // Metodo per verificare se esiste un'immagine del profilo
+  bool hasProfileImage() {
+    return image != null && image!.existsSync();
   }
 }

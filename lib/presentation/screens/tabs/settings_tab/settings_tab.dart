@@ -11,7 +11,6 @@ import 'package:news_lens/l10n.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
 class SettingsTab extends StatefulWidget {
   const SettingsTab({super.key});
 
@@ -21,7 +20,7 @@ class SettingsTab extends StatefulWidget {
 
 class _SettingsTabState extends State<SettingsTab> {
   late PreSettingsProvider _preSettingsProvider;
-  final FirebaseAuth  _auth = FirebaseAuth.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   @override
   void initState() {
@@ -30,12 +29,31 @@ class _SettingsTabState extends State<SettingsTab> {
     _preSettingsProvider.getUserInfo(); // Carica le informazioni dell'utente
   }
 
+  // Widget per costruire l'immagine del profilo
+  Widget _buildProfileImage(PreSettingsProvider provider) {
+    if (provider.hasProfileImage()) {
+      return ClipOval(
+        child: Image.file(
+          provider.getCurrentImage()!,
+          width: 120,
+          height: 120,
+          fit: BoxFit.cover,
+        ),
+      );
+    } else {
+      return Icon(
+        Icons.camera_alt,
+        size: 50,
+        color: Colors.yellow[200],
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final localeProvider = Provider.of<LocaleProvider>(context);
     final l10n = AppLocalizations.of(context)!;
-    
 
     return Scaffold(
       appBar: AppBar(
@@ -45,7 +63,7 @@ class _SettingsTabState extends State<SettingsTab> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Consumer<PreSettingsProvider>(
-          builder: (context, preSettings, _) {             
+          builder: (context, preSettings, _) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -62,20 +80,7 @@ class _SettingsTabState extends State<SettingsTab> {
                         color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
-                    child: preSettings.image != null
-                        ? ClipOval(
-                            child: Image.file(
-                              preSettings.image!,
-                              width: 120,
-                              height: 120,
-                              fit: BoxFit.cover,
-                            ),
-                          )
-                        : const Icon(
-                            Icons.camera_alt,
-                            size: 50,
-                            color: Colors.red,
-                          ),
+                    child: _buildProfileImage(preSettings),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -91,7 +96,7 @@ class _SettingsTabState extends State<SettingsTab> {
                     ),
                     IconButton(
                       onPressed: _editNickname,
-                      icon: const Icon(Icons.edit, color: Colors.red),
+                      icon: Icon(Icons.edit, color: Colors.yellow[200]),
                     ),
                   ],
                 ),
@@ -101,7 +106,7 @@ class _SettingsTabState extends State<SettingsTab> {
                 ListTile(
                   leading: Icon(
                     themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
-                    color: Colors.red,
+                    color: Colors.yellow[200],
                   ),
                   title: Text(l10n.darkMode),
                   trailing: Switch(
@@ -109,15 +114,15 @@ class _SettingsTabState extends State<SettingsTab> {
                     onChanged: (value) {
                       themeProvider.toggleTheme(value);
                     },
-                    activeColor: Colors.red,
+                    activeColor: Colors.yellow[200],
                   ),
                 ),
 
-                // Language Selection
+                // Sezione per la lingua
                 ListTile(
-                  leading: const Icon(
+                  leading: Icon(
                     Icons.language,
-                    color: Colors.red,
+                    color: Colors.yellow[200],
                   ),
                   title: Text(l10n.language),
                   trailing: DropdownButton<String>(
@@ -140,7 +145,7 @@ class _SettingsTabState extends State<SettingsTab> {
                 ),
                 const SizedBox(height: 32),
 
-                // Interests Section
+                // Sezione interessi
                 Text(
                   l10n.interest,
                   style: const TextStyle(
@@ -151,7 +156,7 @@ class _SettingsTabState extends State<SettingsTab> {
                 ),
                 const SizedBox(height: 8),
 
-                // Interests Grid
+                // Griglia degli interessi
                 GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -168,7 +173,7 @@ class _SettingsTabState extends State<SettingsTab> {
 
                     return Card(
                       elevation: 0,
-                      color: isSelected ? Colors.redAccent : Colors.grey,
+                      color: isSelected ? Colors.yellow[200] : Colors.grey,
                       child: InkWell(
                         onTap: () {
                           preSettings.toggleInterest(interest, !isSelected);
@@ -184,14 +189,14 @@ class _SettingsTabState extends State<SettingsTab> {
                                     preSettings.toggleInterest(interest, value);
                                   }
                                 },
-                                activeColor: Colors.red, 
+                                activeColor: Colors.yellow[200],
                               ),
                               Expanded(
                                 child: Text(
                                   interest,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    color: isSelected ? Colors.white : Colors.black87,
+                                    color: isSelected ? Colors.black : Colors.black87,
                                     fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                                   ),
                                 ),
@@ -201,17 +206,16 @@ class _SettingsTabState extends State<SettingsTab> {
                         ),
                       ),
                     );
-              
                   },
                 ),
                 const SizedBox(height: 30),
-                
+
                 ElevatedButton(
                   onPressed: () async {
                     await preSettings.savePreferences();
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('settings saved'), 
+                        content: Text('settings saved'),
                         duration: Duration(seconds: 2),
                       ),
                     );
@@ -219,7 +223,7 @@ class _SettingsTabState extends State<SettingsTab> {
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     minimumSize: const Size(200, 48),
-                    foregroundColor: Colors.red
+                    foregroundColor: Colors.yellow[200]
                   ),
                   child: Text(l10n.saveSettings),
                 ),
@@ -240,30 +244,29 @@ class _SettingsTabState extends State<SettingsTab> {
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.red
+                    foregroundColor: Colors.yellow[200]
                   ),
                   child: Text(l10n.logout),
                 ),
                 const SizedBox(height: 15),
                 GestureDetector(
-                  onTap: (){
+                  onTap: () {
                     _showConfirmDeleteAccountDialog(context);
                   },
-                  child: const Text(
+                  child: Text(
                     'Delete account',
                     style: TextStyle(
-                      color: Colors.red,
+                      color: Colors.yellow[200],
                       decoration: TextDecoration.underline,
                     ),
                   ),
-                )             
+                )
               ],
             );
           },
         ),
       ),
     );
-    
   }
 
   void _editNickname() async {
@@ -302,62 +305,60 @@ class _SettingsTabState extends State<SettingsTab> {
       },
     );
   }
-  
+
   void _showConfirmDeleteAccountDialog(BuildContext context) {
     showDialog(
-      context: context, 
-      builder: (BuildContext context){
+      context: context,
+      builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Confirmation of deletion'),
           content: const Text('Are you sure you want to delete your account? This action is irreversible.'),
           actions: [
             TextButton(
-              onPressed: (){
+              onPressed: () {
                 Navigator.of(context).pop();
               },
               child: const Text('No')
-              ), 
-              
-              TextButton(
+            ),
+            TextButton(
               onPressed: () async {
                 Navigator.of(context).pop();
                 await _deleteAccount(context);
-              }, 
+              },
               child: const Text('Yes')
-              ),
+            ),
           ],
         );
       }
-      );
-  }
-  
-  Future<void> _deleteAccount(BuildContext context) async {
-  try {
-    User? user = _auth.currentUser;
-    if (user != null) {
-      
-      final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-      themeProvider.resetTheme();
-      
-      print("Account deleted with success");
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Account deleted with success')),
-      );
-
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        "/",
-        (Route<dynamic> route) => false,
-      );
-      await user.delete();
-    }
-  } catch (e) {
-    print("Error during the elimination of account: $e");
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Error during the elimination of account. Retry.')),
     );
   }
-}
+
+  Future<void> _deleteAccount(BuildContext context) async {
+    try {
+      User? user = _auth.currentUser;
+      if (user != null) {
+        final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+        themeProvider.resetTheme();
+
+        print("Account deleted with success");
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Account deleted with success')),
+        );
+
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          "/",
+          (Route<dynamic> route) => false,
+        );
+        await user.delete();
+      }
+    } catch (e) {
+      print("Error during the elimination of account: $e");
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error during the elimination of account. Retry.')),
+      );
+    }
+  }
 }
