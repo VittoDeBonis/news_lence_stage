@@ -249,58 +249,78 @@ class _PreSettingsState extends State<PreSettings> {
   }
   
   Widget _buildProfileImage(PreSettingsProvider provider, BuildContext context) {
-  // Se c'è un'immagine locale (appena selezionata), usala
-  if (provider.image != null) {
-    return ClipOval(
-      child: Image.file(
-        provider.image!,
-        width: 120,
-        height: 120,
-        fit: BoxFit.cover,
-      ),
-    );
-  } 
-  
-  // Se c'è un URL dell'immagine in Firestore
-  return FutureBuilder<DocumentSnapshot>(
-    future: FirebaseFirestore.instance
-        .collection('users')
-        .doc(provider.userId)
-        .get(),
-    builder: (context, snapshot) {
-      // Se il documento è stato caricato
-      if (snapshot.connectionState == ConnectionState.done) {
-        // Controlla se esiste un URL dell'immagine
-        if (snapshot.hasData && 
-            snapshot.data!.exists && 
-            (snapshot.data!.data() as Map<String, dynamic>)['profileImageUrl'] != null) {
-          
-          String profileImageUrl = (snapshot.data!.data() as Map<String, dynamic>)['profileImageUrl'];
-          
-          return ClipOval(
-            child: CachedNetworkImage(
-              imageUrl: profileImageUrl,
-              width: 120,
-              height: 120,
-              fit: BoxFit.cover,
-              placeholder: (context, url) => const CircularProgressIndicator(),
-              errorWidget: (context, url, error) => Icon(
-                Icons.error,
-                size: 50,
-                color: Theme.of(context).colorScheme.error,
-              ),
-            ),
-          );
-        }
-      }
-      
-      // Se non c'è nessuna immagine, mostra l'icona della fotocamera
-      return Icon(
-        Icons.camera_alt,
-        size: 50,
-        color: Theme.of(context).iconTheme.color,
+    // PRIMO: Se c'è un'immagine locale (appena selezionata), usala
+    if (provider.image != null && provider.image!.existsSync()) {
+      return ClipOval(
+        child: Image.file(
+          provider.image!,
+          width: 120,
+          height: 120,
+          fit: BoxFit.cover,
+        ),
       );
-    },
-  );
-}
+    } 
+    
+    // SECONDO: Se non c'è immagine locale, prova a caricare da Firestore
+    // Solo se i dati sono stati caricati completamente
+    if (!provider.dataLoaded) {
+      return const CircularProgressIndicator();
+    }
+    
+    // Se non c'è un'immagine locale ma c'è un userId, controlla Firestore
+    if (provider.userId != null) {
+      return FutureBuilder<DocumentSnapshot>(
+        future: FirebaseFirestore.instance
+            .collection('users')
+            .doc(provider.userId)
+            .get(),
+        builder: (context, snapshot) {
+          // Se il documento è stato caricato
+          if (snapshot.connectionState == ConnectionState.done) {
+            // Controlla se esiste un URL dell'immagine
+            if (snapshot.hasData && 
+                snapshot.data!.exists && 
+                (snapshot.data!.data() as Map<String, dynamic>)['profileImageUrl'] != null) {
+              
+              String profileImageUrl = (snapshot.data!.data() as Map<String, dynamic>)['profileImageUrl'];
+              
+              return ClipOval(
+                child: CachedNetworkImage(
+                  imageUrl: profileImageUrl,
+                  width: 120,
+                  height: 120,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => const CircularProgressIndicator(),
+                  errorWidget: (context, url, error) => Icon(
+                    Icons.error,
+                    size: 50,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              );
+            }
+          }
+          
+          // Se sta ancora caricando
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const CircularProgressIndicator();
+          }
+          
+          // Se non c'è nessuna immagine, mostra l'icona della fotocamera
+          return Icon(
+            Icons.camera_alt,
+            size: 50,
+            color: Theme.of(context).iconTheme.color,
+          );
+        },
+      );
+    }
+    
+    // Default: nessuna immagine
+    return Icon(
+      Icons.camera_alt,
+      size: 50,
+      color: Theme.of(context).iconTheme.color,
+    );
+  }
 }
