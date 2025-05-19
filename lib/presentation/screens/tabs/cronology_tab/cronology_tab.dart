@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:news_lens/models/activity_log.dart';
 
-/// Scheda che mostra la cronologia delle attività dell'utente
 class CronologyTab extends StatefulWidget {
   const CronologyTab({super.key});
 
