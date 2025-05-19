@@ -404,6 +404,8 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
       );
       return;
     }
+
+    await _logSummaryTranslationActivity();
     final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
     final String targetLanguage = localeProvider.locale.languageCode;
     if (kDebugMode) {
@@ -528,7 +530,7 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
       _isProcessing = true;
       _showLoadingIndicator = true;
     });
-    
+    await _logSummaryRegenerationActivity();
     final existingRegeneratedSummary = await _checkForExistingRegeneratedSummary();
     
     if (existingRegeneratedSummary != null) {
@@ -622,8 +624,9 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
             Row(
               children: [
                 TextButton(
-                  onPressed: (){
+                  onPressed: () async {
                     Navigator.of(context).pop();
+                    await _logSummaryRatingActivity(false);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text("Checking for regenerated summary..."),
@@ -635,8 +638,9 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
                   child: const Icon(Icons.thumb_down, color: Colors.blue,)
                 ),
                 TextButton(
-                  onPressed: () {
+                  onPressed: () async {
                     Navigator.of(context).pop(); 
+                    await _logSummaryRatingActivity(true);
                   },
                   child: const Icon(Icons.thumb_up, color: Colors.blue),
                 )
@@ -652,7 +656,7 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
     setState(() {
       _isProcessing = true;
     });
-    
+    await _logPdfGenerationActivity();
     try {
       final pdf = pw.Document();
       
@@ -754,6 +758,7 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
     setState(() {
       _isProcessing = true;
     });
+    await _logSummaryShareActivity();
     
     try {
       final pdf = pw.Document();
@@ -845,6 +850,171 @@ class _NewsSummaryChatbotState extends State<NewsSummaryChatbot> {
       }
     }
   }
+
+
+  Future<void> _logSummaryRegenerationActivity() async {
+  try {
+    final User? user = _auth.currentUser;
+    if (user == null) {
+      if (kDebugMode) {
+        print("Cannot log activity: No user logged in");
+      }
+      return;
+    }
+    
+    final activityData = {
+      'userId': user.uid,
+      'activityType': 'summary_regenerated',
+      'newsId': widget.news.id,
+      'newsTitle': widget.news.title,
+      'description': 'User requested summary regeneration for news article',
+      'timestamp': FieldValue.serverTimestamp(),
+    };
+    
+    await _firestore.collection('activity_logs').add(activityData);
+    
+    if (kDebugMode) {
+      print("Regeneration activity logged successfully");
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print("Error logging regeneration activity: $e");
+    }
+  }
+}
+
+// Metodo per registrare la traduzione del sommario
+Future<void> _logSummaryTranslationActivity() async {
+  try {
+    final User? user = _auth.currentUser;
+    if (user == null) {
+      if (kDebugMode) {
+        print("Cannot log activity: No user logged in");
+      }
+      return;
+    }
+    
+    final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
+    final String targetLanguage = localeProvider.locale.languageCode;
+    
+    final activityData = {
+      'userId': user.uid,
+      'activityType': 'summary_translated',
+      'newsId': widget.news.id,
+      'newsTitle': widget.news.title,
+      'description': 'Summary translated to ${targetLanguage.toUpperCase()}',
+      'timestamp': FieldValue.serverTimestamp(),
+    };
+    
+    await _firestore.collection('activity_logs').add(activityData);
+    
+    if (kDebugMode) {
+      print("Translation activity logged successfully");
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print("Error logging translation activity: $e");
+    }
+  }
+}
+
+// Metodo per registrare il rating del sommario
+Future<void> _logSummaryRatingActivity(bool isPositive) async {
+  try {
+    final User? user = _auth.currentUser;
+    if (user == null) {
+      if (kDebugMode) {
+        print("Cannot log activity: No user logged in");
+      }
+      return;
+    }
+    
+    final activityData = {
+      'userId': user.uid,
+      'activityType': 'summary_rated',
+      'newsId': widget.news.id,
+      'newsTitle': widget.news.title,
+      'description': isPositive 
+          ? 'User rated summary positively (thumbs up)'
+          : 'User rated summary negatively (thumbs down)',
+      'timestamp': FieldValue.serverTimestamp(),
+    };
+    
+    await _firestore.collection('activity_logs').add(activityData);
+    
+    if (kDebugMode) {
+      print("Rating activity logged successfully");
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print("Error logging rating activity: $e");
+    }
+  }
+}
+
+// Metodo per registrare la condivisione del sommario
+Future<void> _logSummaryShareActivity() async {
+  try {
+    final User? user = _auth.currentUser;
+    if (user == null) {
+      if (kDebugMode) {
+        print("Cannot log activity: No user logged in");
+      }
+      return;
+    }
+    
+    final activityData = {
+      'userId': user.uid,
+      'activityType': 'summary_shared',
+      'newsId': widget.news.id,
+      'newsTitle': widget.news.title,
+      'description': 'User shared summary as PDF',
+      'timestamp': FieldValue.serverTimestamp(),
+    };
+    
+    await _firestore.collection('activity_logs').add(activityData);
+    
+    if (kDebugMode) {
+      print("Share activity logged successfully");
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print("Error logging share activity: $e");
+    }
+  }
+}
+
+// Metodo per registrare la generazione di PDF
+Future<void> _logPdfGenerationActivity() async {
+  try {
+    final User? user = _auth.currentUser;
+    if (user == null) {
+      if (kDebugMode) {
+        print("Cannot log activity: No user logged in");
+      }
+      return;
+    }
+    
+    final activityData = {
+      'userId': user.uid,
+      'activityType': 'pdf_generated',
+      'newsId': widget.news.id,
+      'newsTitle': widget.news.title,
+      'description': 'User generated PDF of summary',
+      'timestamp': FieldValue.serverTimestamp(),
+    };
+    
+    await _firestore.collection('activity_logs').add(activityData);
+    
+    if (kDebugMode) {
+      print("PDF generation activity logged successfully");
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print("Error logging PDF generation activity: $e");
+    }
+  }
+}
 
   @override
   Widget build(BuildContext context) {

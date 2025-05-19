@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:news_lens/models/activity_log.dart';
 
-/// Scheda che mostra la cronologia delle attività dell'utente
 class CronologyTab extends StatefulWidget {
   const CronologyTab({super.key});
 
@@ -22,13 +21,13 @@ class _CronologyTabState extends State<CronologyTab> {
   List<ActivityLog> _activityLogs = [];
   bool _isLoading = true;
   String? _errorMessage;
-  String _filterType = 'all'; // Tipo di filtro corrente
-  String _eventName = ''; // Nome dell'evento da configurazione remota
+  String _filterType = 'all'; 
+  String _eventName = ''; 
 
   @override
   void initState() {
     super.initState();
-    _initRemoteConfig(); // Inizializza la configurazione remota all'avvio
+    _initRemoteConfig(); 
   }
 
   /// Inizializza la configurazione remota e carica le informazioni necessarie
