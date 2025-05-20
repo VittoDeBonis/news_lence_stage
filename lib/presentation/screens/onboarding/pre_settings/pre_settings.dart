@@ -23,6 +23,21 @@ class _PreSettingsState extends State<PreSettings> {
   void initState() {
     super.initState();
     _provider = PreSettingsProvider();
+    _provider.addListener(_syncLanguage);
+  }
+
+  @override
+  void dispose() {
+    _provider.removeListener(_syncLanguage);
+    super.dispose();
+  }
+
+  void _syncLanguage() {
+    if (_provider.dataLoaded) {
+      // Sincronizza la lingua con il LocaleProvider quando i dati sono caricati
+      final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
+      localeProvider.setLocale(_provider.selectedLanguage);
+    }
   }
 
   void _editNickname() {
