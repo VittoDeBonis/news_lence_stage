@@ -1,4 +1,4 @@
-// Questo è il file SettingsTab.dart (non modificato rispetto al tuo originale)
+// Questo è il file SettingsTab.dart (aggiornato con colore viola)
 import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -46,7 +46,7 @@ class _SettingsTabState extends State<SettingsTab> {
       return Icon(
         Icons.camera_alt,
         size: 50,
-        color: Colors.yellow[200],
+        color: Colors.purple[200],
       );
     }
   }
@@ -97,7 +97,7 @@ class _SettingsTabState extends State<SettingsTab> {
                     ),
                     IconButton(
                       onPressed: _editNickname,
-                      icon: Icon(Icons.edit, color: Colors.yellow[200]),
+                      icon: Icon(Icons.edit, color: Colors.purple[200]),
                     ),
                   ],
                 ),
@@ -108,7 +108,7 @@ class _SettingsTabState extends State<SettingsTab> {
                     themeProvider.isDarkMode
                         ? Icons.dark_mode
                         : Icons.light_mode,
-                    color: Colors.yellow[200],
+                    color: Colors.purple[200],
                   ),
                   title: Text(l10n.darkMode),
                   trailing: Switch(
@@ -116,14 +116,14 @@ class _SettingsTabState extends State<SettingsTab> {
                     onChanged: (value) {
                       themeProvider.toggleTheme(value);
                     },
-                    activeColor: Colors.yellow[200],
+                    activeColor: Colors.purple[200],
                   ),
                 ),
                 // Sezione per la lingua
                 ListTile(
                   leading: Icon(
                     Icons.language,
-                    color: Colors.yellow[200],
+                    color: Colors.purple[200],
                   ),
                   title: Text(l10n.language),
                   trailing: DropdownButton<String>(
@@ -137,8 +137,7 @@ class _SettingsTabState extends State<SettingsTab> {
                       }
                     },
                     items: preSettings.languageList
-                        .map<DropdownMenuItem<String>>(
-                            (String value) {
+                        .map<DropdownMenuItem<String>>((String value) {
                       return DropdownMenuItem<String>(
                         value: value,
                         child: Text(value),
@@ -175,7 +174,7 @@ class _SettingsTabState extends State<SettingsTab> {
                         preSettings.selectedInterests[interest] ?? false;
                     return Card(
                       elevation: 0,
-                      color: isSelected ? Colors.yellow[200] : Colors.grey,
+                      color:  Colors.grey,
                       child: InkWell(
                         onTap: () {
                           preSettings.toggleInterest(interest, !isSelected);
@@ -192,7 +191,7 @@ class _SettingsTabState extends State<SettingsTab> {
                                     preSettings.toggleInterest(interest, value);
                                   }
                                 },
-                                activeColor: Colors.yellow[200],
+                                activeColor: Colors.transparent,
                               ),
                               Expanded(
                                 child: Text(
@@ -228,7 +227,7 @@ class _SettingsTabState extends State<SettingsTab> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 24, vertical: 12),
                     minimumSize: const Size(200, 48),
-                    foregroundColor: Colors.yellow[200],
+                    foregroundColor: Colors.purple[200],
                   ),
                   child: Text(l10n.saveSettings),
                 ),
@@ -251,7 +250,7 @@ class _SettingsTabState extends State<SettingsTab> {
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.yellow[200],
+                    foregroundColor: Colors.purple[200],
                   ),
                   child: Text(l10n.logout),
                 ),
@@ -263,7 +262,7 @@ class _SettingsTabState extends State<SettingsTab> {
                   child: Text(
                     'Delete account',
                     style: TextStyle(
-                      color: Colors.yellow[200],
+                      color: Colors.purple[200],
                       decoration: TextDecoration.underline,
                     ),
                   ),
