@@ -18,6 +18,31 @@ class PreSettingsProvider extends ChangeNotifier {
   List<String> languageList = ['EN', 'IT', 'DE', 'FR'];
   String selectedLanguage = 'EN';
   List<String> interestsList = ['Politics', 'Sports', 'Science', 'Technology'];
+  
+  // Mappa gli interessi localizzati ai valori standard
+  final Map<String, String> _interestToStandardMap = {
+    // Inglese (standard)
+    'Politics': 'politics',
+    'Sports': 'sports',
+    'Science': 'science',
+    'Technology': 'technology',
+    // Italiano
+    'Politica': 'politics',
+    'Sport': 'sports',
+    'Scienza': 'science',
+    'Tecnologia': 'technology',
+    // Tedesco
+    'Politik': 'politics',
+    'Sport': 'sports',
+    'Wissenschaft': 'science',
+    'Technologie': 'technology',
+    // Francese
+    'Politique': 'politics',
+    'Sports': 'sports',
+    'Science': 'science',
+    'Technologie': 'technology',
+  };
+  
   Map<String, bool> selectedInterests = {};
   bool dataLoaded = false;
   bool isUploadingImage = false; // Indica se è in corso un upload
@@ -103,10 +128,12 @@ class PreSettingsProvider extends ChangeNotifier {
             selectedInterests[interest] = false;
           }
           
-          // Imposta quelli salvati a true
+          // Imposta quelli salvati a true (converte da id standard a nomi localizzati)
           for (var interest in interests) {
-            if (selectedInterests.containsKey(interest)) {
-              selectedInterests[interest] = true;
+            // Trova l'interesse localizzato corrispondente all'id standard
+            String? localizedInterest = _findLocalizedInterest(interest.toString());
+            if (localizedInterest != null && selectedInterests.containsKey(localizedInterest)) {
+              selectedInterests[localizedInterest] = true;
             }
           }
         } else {
@@ -149,6 +176,16 @@ class PreSettingsProvider extends ChangeNotifier {
         print('Errore nel caricamento dei dati: $e');
       }
     }
+  }
+
+  // Metodo per trovare l'interesse localizzato corrispondente all'id standard
+  String? _findLocalizedInterest(String standardId) {
+    for (var entry in interestsList) {
+      if (_interestToStandardMap[entry]?.toLowerCase() == standardId.toLowerCase()) {
+        return entry;
+      }
+    }
+    return null;
   }
 
   // Metodo per scaricare l'immagine da Firebase Storage e salvarla localmente
@@ -196,10 +233,12 @@ class PreSettingsProvider extends ChangeNotifier {
   void updateInterests(List<String> newInterests) {
     interestsList = newInterests;
     
-    // Assicurati che selectedInterests contenga tutti gli interessi
+    // Aggiorna la mappa degli interessi mantenendo lo stato precedente
+    Map<String, bool> updatedInterests = {};
     for (var interest in interestsList) {
-      selectedInterests[interest] = true;
+      updatedInterests[interest] = selectedInterests[interest] ?? true;
     }
+    selectedInterests = updatedInterests;
     notifyListeners();
   }
 
@@ -221,11 +260,12 @@ class PreSettingsProvider extends ChangeNotifier {
     if (userId == null) return;
     
     try {
-      // Prepara la lista degli interessi selezionati
+      // Converti gli interessi localizzati in ID standard
       List<String> userInterests = [];
       selectedInterests.forEach((interest, isSelected) {
         if (isSelected) {
-          userInterests.add(interest);
+          String standardId = _interestToStandardMap[interest] ?? interest.toLowerCase();
+          userInterests.add(standardId);
         }
       });
       
