@@ -7,6 +7,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path/path.dart' as path;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:flutter/material.dart';
 
 class PreSettingsProvider extends ChangeNotifier {
   File? image;
@@ -19,8 +20,7 @@ class PreSettingsProvider extends ChangeNotifier {
   List<String> interestsList = ['Politics', 'Sports', 'Science', 'Technology'];
   Map<String, bool> selectedInterests = {};
   bool dataLoaded = false;
-  
-  // Riferimenti a Firestore
+  bool isUploadingImage = false; // Indica se è in corso un upload
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance; 
 
@@ -251,53 +251,100 @@ class PreSettingsProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> getImage() async {
+  Future<void> getImage(BuildContext context) async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.camera);
+    
+    try {
+      // MODIFICATO: Abilita la scelta dalla galleria oltre che dalla fotocamera
+      final XFile? pickedFile = await showDialog<XFile?>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Seleziona immagine'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: Icon(Icons.camera_alt),
+                  title: Text('Scatta una foto'),
+                  onTap: () async {
+                    Navigator.pop(context, await picker.pickImage(source: ImageSource.camera));
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.photo_library),
+                  title: Text('Scegli dalla galleria'),
+                  onTap: () async {
+                    Navigator.pop(context, await picker.pickImage(source: ImageSource.gallery));
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      );
 
-    if (pickedFile != null && userId != null) {
-      try {
-        // Ottieni la directory dei documenti dell'app
-        Directory appDocDir = await getApplicationDocumentsDirectory();
-        String localPath = path.join(appDocDir.path, 'profile_images', 'profile_$userId.jpg');
-        
-        // Crea la directory se non esiste
-        Directory(path.dirname(localPath)).createSync(recursive: true);
-        
-        // Copia l'immagine selezionata nella directory locale
-        File imageFile = File(pickedFile.path);
-        File localImageFile = await imageFile.copy(localPath);
-        
-        // Salva il path locale
-        await saveLocalImagePath(localPath);
-        
-        // Carica l'immagine su Firebase Storage
-        String fileName = 'profile_${userId}_${DateTime.now().millisecondsSinceEpoch}${path.extension(pickedFile.path)}';
-        Reference storageRef = _storage.ref().child('profile_images/$fileName');
-        
-        // Inizia il caricamento
-        await storageRef.putFile(localImageFile);
-        
-        // Ottieni l'URL dell'immagine
-        String imageUrl = await storageRef.getDownloadURL();
-        
-        // Aggiorna Firestore con l'URL dell'immagine
-        await _firestore.collection('users').doc(userId).update({
-          'profileImageUrl': imageUrl
-        });
-        
-        // Aggiorna l'immagine locale
-        image = localImageFile;
+      if (pickedFile != null && userId != null) {
+        // Imposta lo stato di caricamento
+        isUploadingImage = true;
         notifyListeners();
-      } catch (e) {
+        
+        // MODIFICATO: Aggiorna immediatamente l'immagine locale senza aspettare il caricamento
+        // Questo consentirà di vedere subito l'immagine nell'interfaccia
+        image = File(pickedFile.path);
+        notifyListeners();
+        
+        try {
+          // Ottieni la directory dei documenti dell'app
+          Directory appDocDir = await getApplicationDocumentsDirectory();
+          String localPath = path.join(appDocDir.path, 'profile_images', 'profile_$userId.jpg');
+          
+          // Crea la directory se non esiste
+          Directory(path.dirname(localPath)).createSync(recursive: true);
+          
+          // Copia l'immagine selezionata nella directory locale
+          File imageFile = File(pickedFile.path);
+          File localImageFile = await imageFile.copy(localPath);
+          
+          // Salva il path locale
+          await saveLocalImagePath(localPath);
+          
+          // Carica l'immagine su Firebase Storage in background
+          String fileName = 'profile_${userId}_${DateTime.now().millisecondsSinceEpoch}${path.extension(pickedFile.path)}';
+          Reference storageRef = _storage.ref().child('profile_images/$fileName');
+          
+          // Inizia il caricamento
+          await storageRef.putFile(localImageFile);
+          
+          // Ottieni l'URL dell'immagine
+          String imageUrl = await storageRef.getDownloadURL();
+          
+          // Aggiorna Firestore con l'URL dell'immagine
+          await _firestore.collection('users').doc(userId).update({
+            'profileImageUrl': imageUrl
+          });
+          
+          // Aggiorna l'immagine locale con il file salvato localmente
+          image = localImageFile;
+        } catch (e) {
+          if (kDebugMode) {
+            print('Errore nel caricamento dell\'immagine: $e');
+          }
+        } finally {
+          isUploadingImage = false;
+          notifyListeners();
+        }
+      } else {
         if (kDebugMode) {
-          print('Errore nel caricamento dell\'immagine: $e');
+          print('Nessuna immagine selezionata.');
         }
       }
-    } else {
+    } catch (e) {
       if (kDebugMode) {
-        print('Nessuna immagine selezionata.');
+        print('Errore nella selezione dell\'immagine: $e');
       }
+      isUploadingImage = false;
+      notifyListeners();
     }
   }
 

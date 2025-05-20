@@ -89,22 +89,42 @@ class _PreSettingsState extends State<PreSettings> {
                 children: [
                   // Immagine del profilo
                   GestureDetector(
-                    onTap: () => provider.getImage(),
+                    onTap: () => provider.getImage(context),
                     onLongPress: () => provider.removeImage(),
-                    child: Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.onSurface,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                          child: _buildProfileImage(provider, context),
                         ),
-                      ),
-                      child: _buildProfileImage(provider, context),
+                        // Indicatore di caricamento
+                        if (provider.isUploadingImage)
+                          Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Theme.of(context).colorScheme.surface.withOpacity(0.7),
+                            ),
+                            child: const Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
+                  const SizedBox(height: 8),
+                  // Usa una stringa diretta finché non viene aggiunta nei file di localizzazione
                   Text(
-                    '',
+                    'Tocca per cambiare immagine', // Sostituisci con l10n.tapToChangeImage quando disponibile
                     style: TextStyle(
                       fontSize: 12,
                       color: Theme.of(context).hintColor,
@@ -249,8 +269,8 @@ class _PreSettingsState extends State<PreSettings> {
   }
   
   Widget _buildProfileImage(PreSettingsProvider provider, BuildContext context) {
-    // PRIMO: Se c'è un'immagine locale (appena selezionata), usala
-    if (provider.image != null && provider.image!.existsSync()) {
+    // PRIMA: Se c'è un'immagine locale (appena selezionata o caricata), usala
+    if (provider.image != null) {
       return ClipOval(
         child: Image.file(
           provider.image!,
@@ -261,7 +281,7 @@ class _PreSettingsState extends State<PreSettings> {
       );
     } 
     
-    // SECONDO: Se non c'è immagine locale, prova a caricare da Firestore
+    // SECONDA: Se non c'è immagine locale, prova a caricare da Firestore
     // Solo se i dati sono stati caricati completamente
     if (!provider.dataLoaded) {
       return const CircularProgressIndicator();

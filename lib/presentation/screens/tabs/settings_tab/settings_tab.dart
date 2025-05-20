@@ -1,3 +1,4 @@
+// Questo è il file SettingsTab.dart (non modificato rispetto al tuo originale)
 import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -25,7 +26,8 @@ class _SettingsTabState extends State<SettingsTab> {
   @override
   void initState() {
     super.initState();
-    _preSettingsProvider = Provider.of<PreSettingsProvider>(context, listen: false);
+    _preSettingsProvider =
+        Provider.of<PreSettingsProvider>(context, listen: false);
     _preSettingsProvider.getUserInfo(); // Carica le informazioni dell'utente
   }
 
@@ -69,7 +71,7 @@ class _SettingsTabState extends State<SettingsTab> {
               children: [
                 // Avatar
                 GestureDetector(
-                  onTap: () => preSettings.getImage(),
+                  onTap: () => preSettings.getImage(context),
                   onLongPress: () => preSettings.removeImage(),
                   child: Container(
                     width: 120,
@@ -84,7 +86,6 @@ class _SettingsTabState extends State<SettingsTab> {
                   ),
                 ),
                 const SizedBox(height: 16),
-
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -102,10 +103,11 @@ class _SettingsTabState extends State<SettingsTab> {
                 ),
                 const Divider(height: 1, thickness: 1),
                 const SizedBox(height: 16),
-
                 ListTile(
                   leading: Icon(
-                    themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
+                    themeProvider.isDarkMode
+                        ? Icons.dark_mode
+                        : Icons.light_mode,
                     color: Colors.yellow[200],
                   ),
                   title: Text(l10n.darkMode),
@@ -117,7 +119,6 @@ class _SettingsTabState extends State<SettingsTab> {
                     activeColor: Colors.yellow[200],
                   ),
                 ),
-
                 // Sezione per la lingua
                 ListTile(
                   leading: Icon(
@@ -135,7 +136,9 @@ class _SettingsTabState extends State<SettingsTab> {
                         localeProvider.setLocale(value);
                       }
                     },
-                    items: preSettings.languageList.map<DropdownMenuItem<String>>((String value) {
+                    items: preSettings.languageList
+                        .map<DropdownMenuItem<String>>(
+                            (String value) {
                       return DropdownMenuItem<String>(
                         value: value,
                         child: Text(value),
@@ -144,7 +147,6 @@ class _SettingsTabState extends State<SettingsTab> {
                   ),
                 ),
                 const SizedBox(height: 32),
-
                 // Sezione interessi
                 Text(
                   l10n.interest,
@@ -155,12 +157,12 @@ class _SettingsTabState extends State<SettingsTab> {
                   ),
                 ),
                 const SizedBox(height: 8),
-
                 // Griglia degli interessi
                 GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     childAspectRatio: 4,
                     crossAxisSpacing: 5,
@@ -169,8 +171,8 @@ class _SettingsTabState extends State<SettingsTab> {
                   itemCount: preSettings.interestsList.length,
                   itemBuilder: (context, index) {
                     final interest = preSettings.interestsList[index];
-                    bool isSelected = preSettings.selectedInterests[interest] ?? false;
-
+                    bool isSelected =
+                        preSettings.selectedInterests[interest] ?? false;
                     return Card(
                       elevation: 0,
                       color: isSelected ? Colors.yellow[200] : Colors.grey,
@@ -179,7 +181,8 @@ class _SettingsTabState extends State<SettingsTab> {
                           preSettings.toggleInterest(interest, !isSelected);
                         },
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 8.0),
                           child: Row(
                             children: [
                               Checkbox(
@@ -196,8 +199,10 @@ class _SettingsTabState extends State<SettingsTab> {
                                   interest,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    color: isSelected ? Colors.black : Colors.black87,
-                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                    color:
+                                        isSelected ? Colors.black : Colors.black87,
+                                    fontWeight:
+                                        isSelected ? FontWeight.bold : FontWeight.normal,
                                   ),
                                 ),
                               ),
@@ -209,7 +214,6 @@ class _SettingsTabState extends State<SettingsTab> {
                   },
                 ),
                 const SizedBox(height: 30),
-
                 ElevatedButton(
                   onPressed: () async {
                     await preSettings.savePreferences();
@@ -221,30 +225,33 @@ class _SettingsTabState extends State<SettingsTab> {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
                     minimumSize: const Size(200, 48),
-                    foregroundColor: Colors.yellow[200]
+                    foregroundColor: Colors.yellow[200],
                   ),
                   child: Text(l10n.saveSettings),
                 ),
                 const SizedBox(height: 10),
-
                 ElevatedButton(
                   onPressed: () async {
                     try {
                       await FirebaseAuth.instance.signOut();
-                      Navigator.pushNamedAndRemoveUntil(context, "/", (Route<dynamic> route) => false);
+                      Navigator.pushNamedAndRemoveUntil(
+                          context, "/", (Route<dynamic> route) => false);
                     } catch (e) {
                       if (kDebugMode) {
                         print('Error signing out: $e');
                       }
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Error signing out. Please try again.')),
+                        const SnackBar(
+                            content:
+                                Text('Error signing out. Please try again.')),
                       );
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.yellow[200]
+                    foregroundColor: Colors.yellow[200],
                   ),
                   child: Text(l10n.logout),
                 ),
@@ -270,9 +277,10 @@ class _SettingsTabState extends State<SettingsTab> {
   }
 
   void _editNickname() async {
-    final preSettings = Provider.of<PreSettingsProvider>(context, listen: false);
-    TextEditingController controller = TextEditingController(text: preSettings.nickname);
-
+    final preSettings =
+        Provider.of<PreSettingsProvider>(context, listen: false);
+    TextEditingController controller =
+        TextEditingController(text: preSettings.nickname);
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -312,24 +320,25 @@ class _SettingsTabState extends State<SettingsTab> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Confirmation of deletion'),
-          content: const Text('Are you sure you want to delete your account? This action is irreversible.'),
+          content: const Text(
+              'Are you sure you want to delete your account? This action is irreversible.'),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text('No')
+              child: const Text('No'),
             ),
             TextButton(
               onPressed: () async {
                 Navigator.of(context).pop();
                 await _deleteAccount(context);
               },
-              child: const Text('Yes')
+              child: const Text('Yes'),
             ),
           ],
         );
-      }
+      },
     );
   }
 
@@ -337,15 +346,12 @@ class _SettingsTabState extends State<SettingsTab> {
     try {
       User? user = _auth.currentUser;
       if (user != null) {
-        final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+        final themeProvider =
+            Provider.of<ThemeProvider>(context, listen: false);
         themeProvider.resetTheme();
-
         print("Account deleted with success");
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Account deleted with success')),
-        );
-
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Account deleted with success')));
         Navigator.pushNamedAndRemoveUntil(
           context,
           "/",
@@ -355,10 +361,9 @@ class _SettingsTabState extends State<SettingsTab> {
       }
     } catch (e) {
       print("Error during the elimination of account: $e");
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error during the elimination of account. Retry.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text(
+              'Error during the elimination of account. Retry.')));
     }
   }
 }
