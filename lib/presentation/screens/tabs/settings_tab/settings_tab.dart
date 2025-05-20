@@ -46,7 +46,7 @@ class _SettingsTabState extends State<SettingsTab> {
       return Icon(
         Icons.camera_alt,
         size: 50,
-        color: Colors.purple[200],
+        color: Colors.pink,
       );
     }
   }
@@ -97,7 +97,7 @@ class _SettingsTabState extends State<SettingsTab> {
                     ),
                     IconButton(
                       onPressed: _editNickname,
-                      icon: Icon(Icons.edit, color: Colors.purple[200]),
+                      icon: Icon(Icons.edit, color: Colors.pink),
                     ),
                   ],
                 ),
@@ -108,7 +108,7 @@ class _SettingsTabState extends State<SettingsTab> {
                     themeProvider.isDarkMode
                         ? Icons.dark_mode
                         : Icons.light_mode,
-                    color: Colors.purple[200],
+                    color: Colors.pink,
                   ),
                   title: Text(l10n.darkMode),
                   trailing: Switch(
@@ -116,14 +116,14 @@ class _SettingsTabState extends State<SettingsTab> {
                     onChanged: (value) {
                       themeProvider.toggleTheme(value);
                     },
-                    activeColor: Colors.purple[200],
+                    activeColor: Colors.pink,
                   ),
                 ),
                 // Sezione per la lingua
                 ListTile(
                   leading: Icon(
                     Icons.language,
-                    color: Colors.purple[200],
+                    color: Colors.pink,
                   ),
                   title: Text(l10n.language),
                   trailing: DropdownButton<String>(
@@ -170,11 +170,12 @@ class _SettingsTabState extends State<SettingsTab> {
                   itemCount: preSettings.interestsList.length,
                   itemBuilder: (context, index) {
                     final interest = preSettings.interestsList[index];
+                    final translatedInterest = getTranslatedInterest(l10n, interest);
                     bool isSelected =
                         preSettings.selectedInterests[interest] ?? false;
                     return Card(
                       elevation: 0,
-                      color:  Colors.grey,
+                      color: isSelected ? Colors.pink : Colors.grey,
                       child: InkWell(
                         onTap: () {
                           preSettings.toggleInterest(interest, !isSelected);
@@ -191,7 +192,7 @@ class _SettingsTabState extends State<SettingsTab> {
                                     preSettings.toggleInterest(interest, value);
                                   }
                                 },
-                                activeColor: Colors.transparent,
+                                activeColor: Colors.pink,
                               ),
                               Expanded(
                                 child: Text(
@@ -227,7 +228,7 @@ class _SettingsTabState extends State<SettingsTab> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 24, vertical: 12),
                     minimumSize: const Size(200, 48),
-                    foregroundColor: Colors.purple[200],
+                    foregroundColor: Colors.pink,
                   ),
                   child: Text(l10n.saveSettings),
                 ),
@@ -250,7 +251,7 @@ class _SettingsTabState extends State<SettingsTab> {
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.purple[200],
+                    foregroundColor: Colors.pink,
                   ),
                   child: Text(l10n.logout),
                 ),
@@ -262,7 +263,7 @@ class _SettingsTabState extends State<SettingsTab> {
                   child: Text(
                     'Delete account',
                     style: TextStyle(
-                      color: Colors.purple[200],
+                      color: Colors.pink,
                       decoration: TextDecoration.underline,
                     ),
                   ),
@@ -274,6 +275,21 @@ class _SettingsTabState extends State<SettingsTab> {
       ),
     );
   }
+
+  String getTranslatedInterest(AppLocalizations l10n, String interestKey) {
+  switch (interestKey) {
+    case 'sports':
+      return l10n.sports;
+    case 'technology':
+      return l10n.technology;
+    case 'politics':
+      return l10n.politics;
+    case 'entertainment':
+      return l10n.science;
+    default:
+      return interestKey; // Fallback se non è presente una traduzione
+  }
+}
 
   void _editNickname() async {
     final preSettings =
