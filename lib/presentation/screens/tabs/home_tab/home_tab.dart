@@ -199,9 +199,28 @@ class _HomeTabState extends State<HomeTab> {
     });
   }
 
-  // Metodo per costruire una categoria di interesse
-  Widget _buildCategoryItem(String category, {bool isAll = false}) {
-    final displayName = isAll ? 'Tutte' : category;
+  // Metodo per tradurre una categoria
+  String _getCategoryTranslation(String category, AppLocalizations l10n) {
+    switch (category.toLowerCase()) {
+      case 'all':
+        return l10n.all;
+      case 'politics':
+        return l10n.politics;
+      case 'sports':
+        return l10n.sports;
+      case 'science':
+        return l10n.science;
+      case 'technology':
+        return l10n.technology;
+      default:
+        return category; // Fallback al nome originale se non c'è traduzione
+    }
+  }
+
+  // Metodo per costruire una categoria di interesse con traduzione
+  Widget _buildCategoryItem(String category, {required AppLocalizations l10n}) {
+    // Usa la funzione di traduzione per ottenere il nome localizzato
+    final displayName = _getCategoryTranslation(category, l10n);
     final isSelected = _selectedCategory == category;
     
     return Container(
@@ -263,13 +282,15 @@ class _HomeTabState extends State<HomeTab> {
         automaticallyImplyLeading: false,
         title: _isSelectionMode 
           ? Text('${_selectedNews.length} Selected') 
-          : Text(_selectedCategory == 'all' ? 'News' : '$_selectedCategory News'),
+          : Text(_selectedCategory == 'all' 
+              ? l10n.news 
+              : '${_getCategoryTranslation(_selectedCategory!, l10n)} ${l10n.news}'),
         actions: [
           if (_isSelectionMode)
             IconButton(
               icon: const Icon(Icons.close),
               onPressed: _cancelSelection,
-              tooltip: 'Cancel selection',
+              tooltip: l10n.cancel,
             ),
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -299,8 +320,8 @@ class _HomeTabState extends State<HomeTab> {
               itemBuilder: (context, index) {
                 final category = allCategories[index];
                 return _buildCategoryItem(
-                  category, 
-                  isAll: category == 'all'
+                  category,
+                  l10n: l10n // Passa l10n al builder della categoria
                 );
               },
             ),
@@ -314,7 +335,7 @@ class _HomeTabState extends State<HomeTab> {
                 onTap: () {},
                 controller: _searchController,
                 onChanged: (query) {
-                  _updateSuggestions(query);
+                  _updateSuggestions(query, l10n);
                 },
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.search),
@@ -362,8 +383,11 @@ class _HomeTabState extends State<HomeTab> {
                     ),
                     onTap: () {
                       _searchController.text = suggestion;
-                      _updateSuggestions('');
-                      _loadNews(category: suggestion);
+                      _updateSuggestions('', l10n);
+                      
+                      // Trova la categoria originale corrispondente alla traduzione
+                      final originalCategory = _findOriginalCategory(suggestion, l10n);
+                      _loadNews(category: originalCategory);
                     },
                   );
                 },
@@ -372,13 +396,29 @@ class _HomeTabState extends State<HomeTab> {
 
           Divider(height: 1, thickness: 1, color: Theme.of(context).dividerColor),
               
-          Expanded(child: _buildNewsContent()),
+          Expanded(child: _buildNewsContent(l10n)),
         ],
       ),
     );
   }
 
-  Widget _buildNewsContent() {
+  // Metodo per trovare la categoria originale dalla traduzione
+  String _findOriginalCategory(String translatedCategory, AppLocalizations l10n) {
+    // Lista di tutte le categorie
+    final categories = ['all', 'politics', 'sports', 'science', 'technology'];
+    
+    // Cerca la categoria originale che corrisponde alla traduzione
+    for (final category in categories) {
+      if (_getCategoryTranslation(category, l10n) == translatedCategory) {
+        return category;
+      }
+    }
+    
+    // Se non trova corrispondenza, restituisce la categoria tradotta
+    return translatedCategory;
+  }
+
+  Widget _buildNewsContent(AppLocalizations l10n) {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -392,7 +432,7 @@ class _HomeTabState extends State<HomeTab> {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () => _loadNews(category: _selectedCategory),
-              child: const Text('Retry'),
+              child: Text(l10n.save),
             ),
           ],
         ),
@@ -408,7 +448,7 @@ class _HomeTabState extends State<HomeTab> {
             const SizedBox(height: 16),
             Text(
               _selectedCategory != 'all' 
-                ? 'No news available for $_selectedCategory' 
+                ? 'No news available for ${_getCategoryTranslation(_selectedCategory!, l10n)}' 
                 : 'No news available',
               style: const TextStyle(fontSize: 16, color: Colors.grey),
             ),
@@ -500,25 +540,25 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
   
-  void _updateSuggestions(String query) {
+  void _updateSuggestions(String query, AppLocalizations l10n) {
     setState(() {
       if(query.isEmpty){
         _suggestions = [];
       } else {
-        final Map<String, String> displayNames = {'all': 'Tutte'};
-        
         // Utilizza una lista completa di categorie
         final allCategories = ['all', ..._userInterests];
         
         _suggestions = allCategories.where((category) {
-          final displayName = displayNames[category] ?? category;
-          return displayName.toLowerCase().contains(query.toLowerCase()) ||
+          // Ottieni la traduzione della categoria
+          final translatedCategory = _getCategoryTranslation(category, l10n);
+          
+          return translatedCategory.toLowerCase().contains(query.toLowerCase()) ||
                  category.toLowerCase().contains(query.toLowerCase());
-        }).toList();
+        }).map((category) => _getCategoryTranslation(category, l10n)).toList();
       }
     });
   }
-  //Ma perche se io faccio rigenrazione o rating o traduzione... me li ritrovo tutti come summary generato? voglio che ogni azione abbia la sua card personalizzata. Quindi ad esempio per il summary generato va bene, se invece rigenero il summary deve esserci scritto ad esempio Sommario tradotto. dimmmi tutte le modifiche che devo apportare
+
   void _handleCategoryTap(String category) {
     // Se è già selezionata la stessa categoria, non fa nulla
     if (_selectedCategory == category) return;

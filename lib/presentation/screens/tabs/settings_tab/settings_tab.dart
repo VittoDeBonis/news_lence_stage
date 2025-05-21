@@ -1,16 +1,32 @@
-// Questo è il file SettingsTab.dart (non modificato rispetto al tuo originale)
 import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:news_lens/presentation/screens/onboarding/pre_settings/pre_settings_provider.dart';
+import 'package:news_lens/providers/locale_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:news_lens/providers/theme_provider.dart';
-import 'package:news_lens/providers/locale_provider.dart';
 import 'package:news_lens/l10n.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
+// Estensione per supportare l'accesso dinamico alle chiavi di traduzione
+extension AppLocalizationsExtensions on AppLocalizations {
+  String localize(String key) {
+    switch (key) {
+      case 'politics':
+        return politics;
+      case 'sports':
+        return sports;
+      case 'science':
+        return science;
+      case 'technology':
+        return technology;
+      default:
+        return key; // fallback se la chiave non è tradotta
+    }
+  }
+}
 
 class SettingsTab extends StatefulWidget {
   const SettingsTab({super.key});
@@ -54,7 +70,6 @@ class _SettingsTabState extends State<SettingsTab> {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
-    final localeProvider = Provider.of<LocaleProvider>(context);
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
@@ -119,6 +134,7 @@ class _SettingsTabState extends State<SettingsTab> {
                     activeColor: Colors.pink,
                   ),
                 ),
+
                 // Sezione per la lingua
                 ListTile(
                   leading: Icon(
@@ -133,7 +149,8 @@ class _SettingsTabState extends State<SettingsTab> {
                     onChanged: (String? value) {
                       if (value != null) {
                         preSettings.setLanguage(value);
-                        localeProvider.setLocale(value);
+                        Provider.of<LocaleProvider>(context, listen: false)
+                            .setLocale(value);
                       }
                     },
                     items: preSettings.languageList
@@ -146,17 +163,20 @@ class _SettingsTabState extends State<SettingsTab> {
                     }).toList(),
                   ),
                 ),
+
                 const SizedBox(height: 32),
-                // Sezione interessi
+
+                // Titolo Interessi (aggiustato con l10n.interests)
                 Text(
-                  l10n.interest,
-                  style: const TextStyle(
+                  l10n.interests,
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
                 const SizedBox(height: 8),
+
                 // Griglia degli interessi
                 GridView.builder(
                   shrinkWrap: true,
@@ -170,16 +190,19 @@ class _SettingsTabState extends State<SettingsTab> {
                   ),
                   itemCount: preSettings.interestsList.length,
                   itemBuilder: (context, index) {
-                    final interest = preSettings.interestsList[index];
-                    final translatedInterest = getTranslatedInterest(l10n, interest);
-                    bool isSelected =
-                        preSettings.selectedInterests[interest] ?? false;
+                    final interestKey = preSettings.interestsList[index];
+                    final translatedInterest = l10n.localize(interestKey);
+                    final isSelected =
+                        preSettings.selectedInterests[interestKey] ?? false;
+
                     return Card(
                       elevation: 0,
-                      color: isSelected ? Colors.pink : Colors.grey,
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.primaryContainer
+                          : Theme.of(context).colorScheme.surfaceContainerHighest,
                       child: InkWell(
                         onTap: () {
-                          preSettings.toggleInterest(interest, !isSelected);
+                          preSettings.toggleInterest(interestKey, !isSelected);
                         },
                         child: Padding(
                           padding:
@@ -190,20 +213,23 @@ class _SettingsTabState extends State<SettingsTab> {
                                 value: isSelected,
                                 onChanged: (bool? value) {
                                   if (value != null) {
-                                    preSettings.toggleInterest(interest, value);
+                                    preSettings.toggleInterest(
+                                        interestKey, value);
                                   }
                                 },
                                 activeColor: Colors.pink,
                               ),
                               Expanded(
                                 child: Text(
-                                  interest,
+                                  translatedInterest,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    color:
-                                        isSelected ? Colors.black : Colors.black87,
-                                    fontWeight:
-                                        isSelected ? FontWeight.bold : FontWeight.normal,
+                                    color: isSelected
+                                        ? Colors.black
+                                        : Colors.black87,
+                                    fontWeight: isSelected
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
                                   ),
                                 ),
                               ),
@@ -214,7 +240,9 @@ class _SettingsTabState extends State<SettingsTab> {
                     );
                   },
                 ),
+
                 const SizedBox(height: 30),
+
                 ElevatedButton(
                   onPressed: () async {
                     await preSettings.savePreferences();
@@ -233,7 +261,9 @@ class _SettingsTabState extends State<SettingsTab> {
                   ),
                   child: Text(l10n.saveSettings),
                 ),
+
                 const SizedBox(height: 10),
+
                 ElevatedButton(
                   onPressed: () async {
                     try {
@@ -246,8 +276,8 @@ class _SettingsTabState extends State<SettingsTab> {
                       }
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                            content:
-                                Text('Error signing out. Please try again.')),
+                            content: Text(
+                                'Error signing out. Please try again.')),
                       );
                     }
                   },
@@ -256,12 +286,14 @@ class _SettingsTabState extends State<SettingsTab> {
                   ),
                   child: Text(l10n.logout),
                 ),
+
                 const SizedBox(height: 15),
+
                 GestureDetector(
                   onTap: () {
                     _showConfirmDeleteAccountDialog(context);
                   },
-                  child: Text(
+                  child: const Text(
                     'Delete account',
                     style: TextStyle(
                       color: Colors.pink,
@@ -277,21 +309,6 @@ class _SettingsTabState extends State<SettingsTab> {
     );
   }
 
-  String getTranslatedInterest(AppLocalizations l10n, String interestKey) {
-  switch (interestKey) {
-    case 'sports':
-      return l10n.sports;
-    case 'technology':
-      return l10n.technology;
-    case 'politics':
-      return l10n.politics;
-    case 'entertainment':
-      return l10n.science;
-    default:
-      return interestKey; // Fallback se non è presente una traduzione
-  }
-}
-
   void _editNickname() async {
     final preSettings =
         Provider.of<PreSettingsProvider>(context, listen: false);
@@ -300,20 +317,19 @@ class _SettingsTabState extends State<SettingsTab> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        final l10n = AppLocalizations.of(context)!;
         return AlertDialog(
-          title: Text(AppLocalizations.of(context)!.editNickname),
+          title: Text(l10n.editNickname),
           content: TextField(
             controller: controller,
             decoration: InputDecoration(
-              hintText: AppLocalizations.of(context)!.enterNickname,
+              hintText: l10n.enterNickname,
             ),
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text(AppLocalizations.of(context)!.cancel),
+              onPressed: Navigator.of(context).pop,
+              child: Text(l10n.cancel),
             ),
             TextButton(
               onPressed: () async {
@@ -322,7 +338,7 @@ class _SettingsTabState extends State<SettingsTab> {
                   Navigator.of(context).pop();
                 }
               },
-              child: Text(AppLocalizations.of(context)!.save),
+              child: Text(l10n.save),
             ),
           ],
         );
@@ -340,9 +356,7 @@ class _SettingsTabState extends State<SettingsTab> {
               'Are you sure you want to delete your account? This action is irreversible.'),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+              onPressed: Navigator.of(context).pop,
               child: const Text('No'),
             ),
             TextButton(
@@ -367,7 +381,7 @@ class _SettingsTabState extends State<SettingsTab> {
         themeProvider.resetTheme();
         print("Account deleted with success");
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Account deleted with success')));
+            content: Text('Account deleted successfully')));
         Navigator.pushNamedAndRemoveUntil(
           context,
           "/",
@@ -378,8 +392,7 @@ class _SettingsTabState extends State<SettingsTab> {
     } catch (e) {
       print("Error during the elimination of account: $e");
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text(
-              'Error during the elimination of account. Retry.')));
+          content: Text('Error deleting account. Please try again.')));
     }
   }
 }

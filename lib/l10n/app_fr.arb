@@ -1,5 +1,9 @@
 {
   "appTitle": "News Lens",
+  "news":"Nouvelle",
+  "all":"tous",
+  "deleteAccount":"Supprimer le compte",
+  "touchToChangeImage": "Touche pour modifier l’image",
   "preSettingsTitle": "Pré-réglages",
   "darkMode": "Mode sombre",
   "interest": "Intérêts",
