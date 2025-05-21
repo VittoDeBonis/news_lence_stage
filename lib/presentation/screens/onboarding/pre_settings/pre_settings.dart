@@ -18,7 +18,11 @@ class PreSettings extends StatefulWidget {
 
 class _PreSettingsState extends State<PreSettings> {
   late PreSettingsProvider _provider;
-
+  // Memorizza il widget dell'immagine del profilo per evitare ricostruzioni
+  Widget? _cachedProfileImageWidget;
+  String? _lastImagePath;
+  String? _lastProfileUrl;
+  
   @override
   void initState() {
     super.initState();
@@ -37,6 +41,21 @@ class _PreSettingsState extends State<PreSettings> {
       // Sincronizza la lingua con il LocaleProvider quando i dati sono caricati
       final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
       localeProvider.setLocale(_provider.selectedLanguage);
+    }
+  }
+
+  String getTranslatedInterest(AppLocalizations l10n, String interestKey) {
+    switch (interestKey) {
+      case 'sports':
+        return l10n.sports;
+      case 'technology':
+        return l10n.technology;
+      case 'politics':
+        return l10n.politics;
+      case 'entertainment':
+        return l10n.science; 
+      default:
+        return interestKey;
     }
   }
 
@@ -86,7 +105,7 @@ class _PreSettingsState extends State<PreSettings> {
       l10n.sports,
       l10n.science,
       l10n.technology
-    ]);
+    ], false); // Non notificare qui per evitare rebuild non necessari
     
     return ChangeNotifierProvider.value(
       value: _provider,
@@ -120,7 +139,7 @@ class _PreSettingsState extends State<PreSettings> {
                           ),
                           child: _buildProfileImage(provider, context),
                         ),
-                        // Indicatore di caricamento
+                        // Indicatore di caricamento - mostra solo durante upload effettivo
                         if (provider.isUploadingImage)
                           Container(
                             width: 120,
@@ -220,21 +239,24 @@ class _PreSettingsState extends State<PreSettings> {
                     itemCount: provider.interestsList.length,
                     itemBuilder: (context, index) {
                       final interest = provider.interestsList[index];
+                      final translatedInterest = getTranslatedInterest(l10n, interest);
+                      bool isSelected = provider.selectedInterests[interest] ?? false;
+
                       return Card(
                         elevation: 0,
-                        color: provider.selectedInterests[interest] == true 
-                            ? Theme.of(context).colorScheme.primaryContainer 
+                        color: isSelected
+                            ? Theme.of(context).colorScheme.primaryContainer
                             : Theme.of(context).colorScheme.surfaceContainerHighest,
                         child: InkWell(
                           onTap: () {
-                            provider.toggleInterest(interest, !(provider.selectedInterests[interest] ?? false));
+                            provider.toggleInterest(interest, !isSelected);
                           },
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 8.0),
                             child: Row(
                               children: [
                                 Checkbox(
-                                  value: provider.selectedInterests[interest] ?? false,
+                                  value: isSelected,
                                   onChanged: (bool? value) {
                                     if (value != null) {
                                       provider.toggleInterest(interest, value);
@@ -243,12 +265,10 @@ class _PreSettingsState extends State<PreSettings> {
                                 ),
                                 Expanded(
                                   child: Text(
-                                    interest, 
+                                    translatedInterest,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                      fontWeight: provider.selectedInterests[interest] == true 
-                                          ? FontWeight.bold 
-                                          : FontWeight.normal,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                                     ),
                                   ),
                                 ),
@@ -258,7 +278,7 @@ class _PreSettingsState extends State<PreSettings> {
                         ),
                       );
                     },
-                  ),               
+                  ),            
                   const SizedBox(height: 80),
                   ElevatedButton(
                     onPressed: () async {
@@ -284,9 +304,49 @@ class _PreSettingsState extends State<PreSettings> {
   }
   
   Widget _buildProfileImage(PreSettingsProvider provider, BuildContext context) {
+    // Verifica se qualcosa è cambiato per evitare rebuilds inutili
+    bool shouldRebuild = false;
+    
+    if (provider.image != null) {
+      // Controlla se è cambiata l'immagine locale rispetto all'ultima volta
+      String currentPath = provider.image!.path;
+      if (_lastImagePath != currentPath) {
+        _lastImagePath = currentPath;
+        shouldRebuild = true;
+      }
+    }
+    
+    // Controlla se l'URL del profilo è cambiato (nel caso di upload/download)
+    if (provider.userId != null && shouldRebuild == false) {
+      // Controlla il profilo URL solo se necessario
+      DocumentSnapshot? userDoc;
+      FirebaseFirestore.instance
+          .collection('users')
+          .doc(provider.userId)
+          .get()
+          .then((snapshot) {
+        if (snapshot.exists) {
+          Map<String, dynamic> userData = snapshot.data() as Map<String, dynamic>;
+          String? profileUrl = userData['profileImageUrl'];
+          if (profileUrl != _lastProfileUrl) {
+            _lastProfileUrl = profileUrl;
+            _cachedProfileImageWidget = null; // Forza rebuild solo quando cambia l'URL
+          }
+        }
+      });
+    }
+
+    // Se il widget è già in cache e non deve essere aggiornato, restituiscilo
+    if (_cachedProfileImageWidget != null && !shouldRebuild && !provider.isUploadingImage) {
+      return _cachedProfileImageWidget!;
+    }
+    
+    // Altrimenti, crea un nuovo widget
+    Widget profileWidget;
+    
     // PRIMA: Se c'è un'immagine locale (appena selezionata o caricata), usala
     if (provider.image != null) {
-      return ClipOval(
+      profileWidget = ClipOval(
         child: Image.file(
           provider.image!,
           width: 120,
@@ -295,15 +355,31 @@ class _PreSettingsState extends State<PreSettings> {
         ),
       );
     } 
-    
-    // SECONDA: Se non c'è immagine locale, prova a caricare da Firestore
-    // Solo se i dati sono stati caricati completamente
-    if (!provider.dataLoaded) {
-      return const CircularProgressIndicator();
+    // SECONDA: Se non c'è immagine locale ma abbiamo già verificato l'URL del profilo
+    else if (_lastProfileUrl != null && _lastProfileUrl!.isNotEmpty) {
+      profileWidget = ClipOval(
+        child: CachedNetworkImage(
+          imageUrl: _lastProfileUrl!,
+          width: 120,
+          height: 120,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => Icon(
+            Icons.camera_alt,
+            size: 50,
+            color: Theme.of(context).iconTheme.color,
+          ),
+          errorWidget: (context, url, error) => Icon(
+            Icons.error,
+            size: 50,
+            color: Theme.of(context).colorScheme.error,
+          ),
+        ),
+      );
     }
-    
-    // Se non c'è un'immagine locale ma c'è un userId, controlla Firestore
-    if (provider.userId != null) {
+    // TERZA: Se non c'è un'immagine locale ma c'è un userId, controlla Firestore ma in background
+    else if (provider.userId != null && provider.dataLoaded) {
+      // Solo se non stiamo già caricando un'immagine, usa FutureBuilder
+      // Questo viene eseguito solo la prima volta, poi usiamo il cache
       return FutureBuilder<DocumentSnapshot>(
         future: FirebaseFirestore.instance
             .collection('users')
@@ -317,15 +393,19 @@ class _PreSettingsState extends State<PreSettings> {
                 snapshot.data!.exists && 
                 (snapshot.data!.data() as Map<String, dynamic>)['profileImageUrl'] != null) {
               
-              String profileImageUrl = (snapshot.data!.data() as Map<String, dynamic>)['profileImageUrl'];
+              _lastProfileUrl = (snapshot.data!.data() as Map<String, dynamic>)['profileImageUrl'];
               
-              return ClipOval(
+              _cachedProfileImageWidget = ClipOval(
                 child: CachedNetworkImage(
-                  imageUrl: profileImageUrl,
+                  imageUrl: _lastProfileUrl!,
                   width: 120,
                   height: 120,
                   fit: BoxFit.cover,
-                  placeholder: (context, url) => const CircularProgressIndicator(),
+                  placeholder: (context, url) => Icon(
+                    Icons.camera_alt,
+                    size: 50,
+                    color: Theme.of(context).iconTheme.color,
+                  ),
                   errorWidget: (context, url, error) => Icon(
                     Icons.error,
                     size: 50,
@@ -333,29 +413,42 @@ class _PreSettingsState extends State<PreSettings> {
                   ),
                 ),
               );
+              return _cachedProfileImageWidget!;
+            } else {
+              _cachedProfileImageWidget = Icon(
+                Icons.camera_alt,
+                size: 50,
+                color: Theme.of(context).iconTheme.color,
+              );
+              return _cachedProfileImageWidget!;
             }
           }
           
-          // Se sta ancora caricando
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const CircularProgressIndicator();
+          // Se è già in cache, usa quello invece di mostrare loading
+          if (_cachedProfileImageWidget != null) {
+            return _cachedProfileImageWidget!;
           }
           
-          // Se non c'è nessuna immagine, mostra l'icona della fotocamera
-          return Icon(
+          // Se sta ancora caricando, mostra l'icona della fotocamera
+          _cachedProfileImageWidget = Icon(
             Icons.camera_alt,
             size: 50,
             color: Theme.of(context).iconTheme.color,
           );
+          return _cachedProfileImageWidget!;
         },
       );
     }
-    
     // Default: nessuna immagine
-    return Icon(
-      Icons.camera_alt,
-      size: 50,
-      color: Theme.of(context).iconTheme.color,
-    );
+    else {
+      profileWidget = Icon(
+        Icons.camera_alt,
+        size: 50,
+        color: Theme.of(context).iconTheme.color,
+      );
+    }
+    
+    _cachedProfileImageWidget = profileWidget;
+    return profileWidget;
   }
 }
