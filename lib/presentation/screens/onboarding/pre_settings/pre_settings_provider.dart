@@ -14,7 +14,7 @@ class PreSettingsProvider extends ChangeNotifier {
   String? userId;
   String userEmail = '';
   String nickname = '';
-  String? localImagePath; // Nuovo campo per il path locale
+  String? localImagePath; 
   List<String> languageList = ['EN', 'IT', 'DE', 'FR'];
   String selectedLanguage = 'EN';
   List<String> interestsList = ['Politics', 'Sports', 'Science', 'Technology'];
@@ -26,17 +26,17 @@ class PreSettingsProvider extends ChangeNotifier {
     'Sports': 'sports',
     'Science': 'science',
     'Technology': 'technology',
-    // Italiano
+    
     'Politica': 'politics',
     'Sport': 'sports',
     'Scienza': 'science',
     'Tecnologia': 'technology',
-    // Tedesco
+    
     'Politik': 'politics',
     'Sport': 'sports',
     'Wissenschaft': 'science',
     'Technologie': 'technology',
-    // Francese
+    
     'Politique': 'politics',
     'Sports': 'sports',
     'Science': 'science',
@@ -45,7 +45,7 @@ class PreSettingsProvider extends ChangeNotifier {
   
   Map<String, bool> selectedInterests = {};
   bool dataLoaded = false;
-  bool isUploadingImage = false; // Indica se è in corso un upload
+  bool isUploadingImage = false; 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance; 
 
@@ -230,7 +230,24 @@ class PreSettingsProvider extends ChangeNotifier {
     }
   }
 
-  void updateInterests(List<String> newInterests) {
+  // Modificata per consentire l'aggiornamento senza notificare
+  void updateInterests(List<String> newInterests, [bool notify = true]) {
+    // Verifica se la lista è effettivamente cambiata per evitare rebuild non necessari
+    bool hasChanged = false;
+    
+    if (interestsList.length != newInterests.length) {
+      hasChanged = true;
+    } else {
+      for (int i = 0; i < interestsList.length; i++) {
+        if (interestsList[i] != newInterests[i]) {
+          hasChanged = true;
+          break;
+        }
+      }
+    }
+    
+    if (!hasChanged) return; // Se non ci sono cambiamenti, esci
+    
     interestsList = newInterests;
     
     // Aggiorna la mappa degli interessi mantenendo lo stato precedente
@@ -239,18 +256,21 @@ class PreSettingsProvider extends ChangeNotifier {
       updatedInterests[interest] = selectedInterests[interest] ?? true;
     }
     selectedInterests = updatedInterests;
-    notifyListeners();
+    
+    if (notify) {
+      notifyListeners();
+    }
   }
 
   void setLanguage(String language) {
-    if (languageList.contains(language)) {
+    if (languageList.contains(language) && selectedLanguage != language) {
       selectedLanguage = language;
       notifyListeners();
     }
   }
 
   void toggleInterest(String interest, bool value) {
-    if (selectedInterests.containsKey(interest)) {
+    if (selectedInterests.containsKey(interest) && selectedInterests[interest] != value) {
       selectedInterests[interest] = value;
       notifyListeners();
     }
@@ -295,7 +315,6 @@ class PreSettingsProvider extends ChangeNotifier {
     final picker = ImagePicker();
     
     try {
-      // MODIFICATO: Abilita la scelta dalla galleria oltre che dalla fotocamera
       final XFile? pickedFile = await showDialog<XFile?>(
         context: context,
         builder: (BuildContext context) {
@@ -329,7 +348,7 @@ class PreSettingsProvider extends ChangeNotifier {
         isUploadingImage = true;
         notifyListeners();
         
-        // MODIFICATO: Aggiorna immediatamente l'immagine locale senza aspettare il caricamento
+        // Aggiorna immediatamente l'immagine locale senza aspettare il caricamento
         // Questo consentirà di vedere subito l'immagine nell'interfaccia
         image = File(pickedFile.path);
         notifyListeners();
@@ -341,6 +360,8 @@ class PreSettingsProvider extends ChangeNotifier {
           
           // Crea la directory se non esiste
           Directory(path.dirname(localPath)).createSync(recursive: true);
+          
+          // Copia l'immagine selezionata nella directory locale
           
           // Copia l'immagine selezionata nella directory locale
           File imageFile = File(pickedFile.path);
@@ -356,7 +377,7 @@ class PreSettingsProvider extends ChangeNotifier {
           // Inizia il caricamento
           await storageRef.putFile(localImageFile);
           
-          // Ottieni l'URL dell'immagine
+          // Ottiene l'URL dell'immagine
           String imageUrl = await storageRef.getDownloadURL();
           
           // Aggiorna Firestore con l'URL dell'immagine
@@ -392,20 +413,20 @@ class PreSettingsProvider extends ChangeNotifier {
     if (userId == null) return;
     
     try {
-      // Rimuovi l'immagine locale
+      // Rimuove l'immagine locale
       if (localImagePath != null && File(localImagePath!).existsSync()) {
         await File(localImagePath!).delete();
       }
       await removeLocalImagePath();
       
-      // Ottieni il documento utente per verificare se ha un'immagine
+      // Ottiene il documento utente per verificare se ha un'immagine
       DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
       
       if (userDoc.exists) {
         Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
         
         if (userData['profileImageUrl'] != null) {
-          // Estrai il percorso dell'immagine dall'URL
+          // Estrae il percorso dell'immagine dall'URL
           String imageUrl = userData['profileImageUrl'];
           
           // Crea un riferimento all'immagine in Firebase Storage
@@ -421,7 +442,7 @@ class PreSettingsProvider extends ChangeNotifier {
         }
       }
       
-      // Rimuovi l'immagine locale
+      // Rimuove l'immagine locale
       image = null;
       notifyListeners();
     } catch (e) {

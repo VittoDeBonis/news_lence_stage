@@ -1,5 +1,9 @@
 {
   "preferencesSaved": "Preferences saved successfully",
+  "news":"News",
+  "all":"All",
+  "deleteAccount":"Delete account",
+  "touchToChangeImage": "Touch to change image",
   "appTitle": "News Lens",
   "preSettingsTitle": "Pre Settings",
   "darkMode": "Dark mode",

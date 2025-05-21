@@ -7,7 +7,31 @@ import 'package:news_lens/presentation/screens/home_page.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:path/path.dart' as path;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path_provider/path_provider.dart';
 
+// Estensione per supportare l'accesso dinamico alle chiavi di traduzione
+extension AppLocalizationsExtensions on AppLocalizations {
+  String localize(String key) {
+    switch (key) {
+      case 'politics':
+        return politics;
+      case 'sports':
+        return sports;
+      case 'science':
+        return science;
+      case 'technology':
+        return technology;
+      default:
+        return key; // fallback se la chiave non è tradotta
+    }
+  }
+}
 
 class PreSettings extends StatefulWidget {
   const PreSettings({super.key});
@@ -18,6 +42,9 @@ class PreSettings extends StatefulWidget {
 
 class _PreSettingsState extends State<PreSettings> {
   late PreSettingsProvider _provider;
+  Widget? _cachedProfileImageWidget;
+  String? _lastImagePath;
+  String? _lastProfileUrl;
 
   @override
   void initState() {
@@ -34,44 +61,34 @@ class _PreSettingsState extends State<PreSettings> {
 
   void _syncLanguage() {
     if (_provider.dataLoaded) {
-      // Sincronizza la lingua con il LocaleProvider quando i dati sono caricati
       final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
       localeProvider.setLocale(_provider.selectedLanguage);
     }
   }
 
   void _editNickname() {
-    TextEditingController controller = TextEditingController(text: _provider.nickname);
-    
-    showDialog(   
+    final l10n = AppLocalizations.of(context)!;
+    TextEditingController controller =
+        TextEditingController(text: _provider.nickname);
+    showDialog(
       context: context,
-      builder: (BuildContext context) {
-        final l10n = AppLocalizations.of(context)!;
-        return AlertDialog(
-          title: Text(l10n.editNickname),
-          content: TextField(
-            controller: controller,
-            decoration: const InputDecoration(
-              hintText: '',
-            ),
+      builder: (context) => AlertDialog(
+        title: Text(l10n.editNickname),
+        content: TextField(controller: controller),
+        actions: [
+          TextButton(
+            onPressed: Navigator.of(context).pop,
+            child: Text(l10n.cancel),
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text(l10n.cancel),
-            ),
-            TextButton(
-              onPressed: () async {
-                await _provider.updateNickname(controller.text);
-                Navigator.of(context).pop();
-              },
-              child: Text(l10n.save),
-            ),
-          ],
-        );
-      },
+          TextButton(
+            onPressed: () async {
+              await _provider.updateNickname(controller.text);
+              Navigator.of(context).pop();
+            },
+            child: Text(l10n.save),
+          ),
+        ],
+      ),
     );
   }
 
@@ -80,14 +97,13 @@ class _PreSettingsState extends State<PreSettings> {
     final localeProvider = Provider.of<LocaleProvider>(context);
     final l10n = AppLocalizations.of(context)!;
 
-    // Imposta gli interessi nella lingua corretta
     _provider.updateInterests([
-      l10n.politics,
-      l10n.sports,
-      l10n.science,
-      l10n.technology
-    ]);
-    
+      'politics',
+      'sports',
+      'science',
+      'technology'
+    ], false);
+
     return ChangeNotifierProvider.value(
       value: _provider,
       child: Consumer<PreSettingsProvider>(
@@ -98,11 +114,11 @@ class _PreSettingsState extends State<PreSettings> {
               title: Text(l10n.preSettingsTitle),
             ),
             body: SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Immagine del profilo
+                  // Immagine Profilo
                   GestureDetector(
                     onTap: () => provider.getImage(context),
                     onLongPress: () => provider.removeImage(),
@@ -120,14 +136,16 @@ class _PreSettingsState extends State<PreSettings> {
                           ),
                           child: _buildProfileImage(provider, context),
                         ),
-                        // Indicatore di caricamento
                         if (provider.isUploadingImage)
                           Container(
                             width: 120,
                             height: 120,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Theme.of(context).colorScheme.surface.withOpacity(0.7),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surface
+                                  .withOpacity(0.7),
                             ),
                             child: const Center(
                               child: CircularProgressIndicator(),
@@ -137,15 +155,14 @@ class _PreSettingsState extends State<PreSettings> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  // Usa una stringa diretta finché non viene aggiunta nei file di localizzazione
                   Text(
-                    'Tocca per cambiare immagine', // Sostituisci con l10n.tapToChangeImage quando disponibile
+                    l10n.touchToChangeImage,
                     style: TextStyle(
                       fontSize: 12,
                       color: Theme.of(context).hintColor,
                     ),
                   ),
-                  // Nome utente
+                  // Nome Utente
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
@@ -157,9 +174,9 @@ class _PreSettingsState extends State<PreSettings> {
                         Text(
                           provider.nickname.isNotEmpty
                               ? provider.nickname
-                              : (provider.getUserNameFromEmail().isNotEmpty
+                              : provider.getUserNameFromEmail().isNotEmpty
                                   ? provider.getUserNameFromEmail()
-                                  : ''),
+                                  : '',
                           style: const TextStyle(fontSize: 16),
                         ),
                         IconButton(
@@ -168,10 +185,14 @@ class _PreSettingsState extends State<PreSettings> {
                         ),
                       ],
                     ),
-                  ),                 
-                  Divider(height: 1, thickness: 1, color: Theme.of(context).dividerColor),
-                  const SizedBox(height: 16),               
-                  // Selezione lingua
+                  ),
+                  Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: Theme.of(context).dividerColor,
+                  ),
+                  const SizedBox(height: 16),
+                  // Selezione Lingua
                   ListTile(
                     leading: Icon(
                       Icons.language,
@@ -182,36 +203,36 @@ class _PreSettingsState extends State<PreSettings> {
                       value: provider.selectedLanguage,
                       icon: const Icon(Icons.arrow_drop_down),
                       underline: Container(),
-                      onChanged: (String? value) {
+                      onChanged: (value) {
                         if (value != null) {
                           provider.setLanguage(value);
                           localeProvider.setLocale(value);
                         }
                       },
-                      items: provider.languageList.map<DropdownMenuItem<String>>((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
+                      items: provider.languageList
+                          .map((lang) => DropdownMenuItem(
+                                value: lang,
+                                child: Text(lang),
+                              ))
+                          .toList(),
                     ),
                   ),
-                  const SizedBox(height: 32),             
-                  // Sezione Interessi
+                  const SizedBox(height: 32),
+                  // Interessi
                   Text(
-                    l10n.interest, 
+                    l10n.interests,
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
-                  const SizedBox(height: 8),                 
-                  // Griglia Interessi
+                  const SizedBox(height: 8),
                   GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
                       childAspectRatio: 4,
                       crossAxisSpacing: 5,
@@ -219,35 +240,40 @@ class _PreSettingsState extends State<PreSettings> {
                     ),
                     itemCount: provider.interestsList.length,
                     itemBuilder: (context, index) {
-                      final interest = provider.interestsList[index];
+                      final interestKey = provider.interestsList[index];
+                      final translatedInterest = l10n.localize(interestKey);
+                      final isSelected =
+                          provider.selectedInterests[interestKey] ?? false;
                       return Card(
                         elevation: 0,
-                        color: provider.selectedInterests[interest] == true 
-                            ? Theme.of(context).colorScheme.primaryContainer 
-                            : Theme.of(context).colorScheme.surfaceContainerHighest,
+                        color: isSelected
+                            ? Theme.of(context).colorScheme.primaryContainer
+                            : Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
                         child: InkWell(
-                          onTap: () {
-                            provider.toggleInterest(interest, !(provider.selectedInterests[interest] ?? false));
-                          },
+                          onTap: () =>
+                              provider.toggleInterest(interestKey, !isSelected),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 8.0),
                             child: Row(
                               children: [
                                 Checkbox(
-                                  value: provider.selectedInterests[interest] ?? false,
-                                  onChanged: (bool? value) {
+                                  value: isSelected,
+                                  onChanged: (value) {
                                     if (value != null) {
-                                      provider.toggleInterest(interest, value);
+                                      provider.toggleInterest(interestKey, value);
                                     }
                                   },
                                 ),
                                 Expanded(
                                   child: Text(
-                                    interest, 
+                                    translatedInterest,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                      fontWeight: provider.selectedInterests[interest] == true 
-                                          ? FontWeight.bold 
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
                                           : FontWeight.normal,
                                     ),
                                   ),
@@ -258,18 +284,21 @@ class _PreSettingsState extends State<PreSettings> {
                         ),
                       );
                     },
-                  ),               
+                  ),
                   const SizedBox(height: 80),
                   ElevatedButton(
                     onPressed: () async {
                       await provider.savePreferences();
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (context) => const HomePage()),
+                        MaterialPageRoute(
+                          builder: (context) => const HomePage(),
+                        ),
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 12),
                       minimumSize: const Size(200, 48),
                     ),
                     child: Text(l10n.saveSettings),
@@ -282,11 +311,38 @@ class _PreSettingsState extends State<PreSettings> {
       ),
     );
   }
-  
+
   Widget _buildProfileImage(PreSettingsProvider provider, BuildContext context) {
-    // PRIMA: Se c'è un'immagine locale (appena selezionata o caricata), usala
+    bool shouldRebuild = false;
     if (provider.image != null) {
-      return ClipOval(
+      String currentPath = provider.image!.path;
+      if (_lastImagePath != currentPath) {
+        _lastImagePath = currentPath;
+        shouldRebuild = true;
+      }
+    }
+    if (provider.userId != null && !shouldRebuild) {
+      FirebaseFirestore.instance
+          .collection('users')
+          .doc(provider.userId)
+          .get()
+          .then((snapshot) {
+        if (snapshot.exists) {
+          Map<String, dynamic> userData = snapshot.data() as Map<String, dynamic>;
+          String? profileUrl = userData['profileImageUrl'];
+          if (profileUrl != _lastProfileUrl) {
+            _lastProfileUrl = profileUrl;
+            _cachedProfileImageWidget = null;
+          }
+        }
+      });
+    }
+    if (_cachedProfileImageWidget != null && !shouldRebuild && !provider.isUploadingImage) {
+      return _cachedProfileImageWidget!;
+    }
+    Widget profileWidget;
+    if (provider.image != null) {
+      profileWidget = ClipOval(
         child: Image.file(
           provider.image!,
           width: 120,
@@ -294,68 +350,86 @@ class _PreSettingsState extends State<PreSettings> {
           fit: BoxFit.cover,
         ),
       );
-    } 
-    
-    // SECONDA: Se non c'è immagine locale, prova a caricare da Firestore
-    // Solo se i dati sono stati caricati completamente
-    if (!provider.dataLoaded) {
-      return const CircularProgressIndicator();
-    }
-    
-    // Se non c'è un'immagine locale ma c'è un userId, controlla Firestore
-    if (provider.userId != null) {
+    } else if (_lastProfileUrl != null && _lastProfileUrl!.isNotEmpty) {
+      profileWidget = ClipOval(
+        child: CachedNetworkImage(
+          imageUrl: _lastProfileUrl!,
+          width: 120,
+          height: 120,
+          fit: BoxFit.cover,
+          placeholder: (_, __) => Icon(
+            Icons.camera_alt,
+            size: 50,
+            color: Theme.of(context).iconTheme.color,
+          ),
+          errorWidget: (_, __, ___) => Icon(
+            Icons.error,
+            size: 50,
+            color: Theme.of(context).colorScheme.error,
+          ),
+        ),
+      );
+    } else if (provider.userId != null && provider.dataLoaded) {
       return FutureBuilder<DocumentSnapshot>(
         future: FirebaseFirestore.instance
             .collection('users')
             .doc(provider.userId)
             .get(),
         builder: (context, snapshot) {
-          // Se il documento è stato caricato
           if (snapshot.connectionState == ConnectionState.done) {
-            // Controlla se esiste un URL dell'immagine
-            if (snapshot.hasData && 
-                snapshot.data!.exists && 
-                (snapshot.data!.data() as Map<String, dynamic>)['profileImageUrl'] != null) {
-              
-              String profileImageUrl = (snapshot.data!.data() as Map<String, dynamic>)['profileImageUrl'];
-              
-              return ClipOval(
+            if (snapshot.hasData &&
+                snapshot.data!.exists &&
+                (snapshot.data!.data() as Map<String, dynamic>)['profileImageUrl'] !=
+                    null) {
+              _lastProfileUrl = (snapshot.data!.data()
+                  as Map<String, dynamic>)['profileImageUrl'];
+              _cachedProfileImageWidget = ClipOval(
                 child: CachedNetworkImage(
-                  imageUrl: profileImageUrl,
+                  imageUrl: _lastProfileUrl!,
                   width: 120,
                   height: 120,
                   fit: BoxFit.cover,
-                  placeholder: (context, url) => const CircularProgressIndicator(),
-                  errorWidget: (context, url, error) => Icon(
+                  placeholder: (_, __) => Icon(
+                    Icons.camera_alt,
+                    size: 50,
+                    color: Theme.of(context).iconTheme.color,
+                  ),
+                  errorWidget: (_, __, ___) => Icon(
                     Icons.error,
                     size: 50,
                     color: Theme.of(context).colorScheme.error,
                   ),
                 ),
               );
+              return _cachedProfileImageWidget!;
+            } else {
+              _cachedProfileImageWidget = Icon(
+                Icons.camera_alt,
+                size: 50,
+                color: Theme.of(context).iconTheme.color,
+              );
+              return _cachedProfileImageWidget!;
             }
           }
-          
-          // Se sta ancora caricando
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const CircularProgressIndicator();
+          if (_cachedProfileImageWidget != null) {
+            return _cachedProfileImageWidget!;
           }
-          
-          // Se non c'è nessuna immagine, mostra l'icona della fotocamera
-          return Icon(
+          _cachedProfileImageWidget = Icon(
             Icons.camera_alt,
             size: 50,
             color: Theme.of(context).iconTheme.color,
           );
+          return _cachedProfileImageWidget!;
         },
       );
+    } else {
+      profileWidget = Icon(
+        Icons.camera_alt,
+        size: 50,
+        color: Theme.of(context).iconTheme.color,
+      );
     }
-    
-    // Default: nessuna immagine
-    return Icon(
-      Icons.camera_alt,
-      size: 50,
-      color: Theme.of(context).iconTheme.color,
-    );
+    _cachedProfileImageWidget = profileWidget;
+    return profileWidget;
   }
 }
