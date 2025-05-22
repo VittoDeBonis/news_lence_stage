@@ -1,6 +1,8 @@
 {
   "appTitle": "News Lens",
   "news":"Notizie",
+  "health": "Salute",
+  "business": "Affari",
   "all":"Tutte",
   "deleteAccount":"Elimina account",
   "touchToChangeImage": "Tocca per cambiare immagine",

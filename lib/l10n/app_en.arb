@@ -1,5 +1,7 @@
 {
   "preferencesSaved": "Preferences saved successfully",
+  "health": "Health",
+  "business": "Business",
   "news":"News",
   "all":"All",
   "deleteAccount":"Delete account",
