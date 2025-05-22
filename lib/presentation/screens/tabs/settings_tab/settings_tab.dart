@@ -62,7 +62,7 @@ class _SettingsTabState extends State<SettingsTab> {
       return Icon(
         Icons.camera_alt,
         size: 50,
-        color: Colors.pink,
+        color: Theme.of(context).colorScheme.primary,
       );
     }
   }
@@ -112,7 +112,7 @@ class _SettingsTabState extends State<SettingsTab> {
                     ),
                     IconButton(
                       onPressed: _editNickname,
-                      icon: Icon(Icons.edit, color: Colors.pink),
+                      icon: Icon(Icons.edit, color: Theme.of(context).colorScheme.primary),
                     ),
                   ],
                 ),
@@ -123,7 +123,7 @@ class _SettingsTabState extends State<SettingsTab> {
                     themeProvider.isDarkMode
                         ? Icons.dark_mode
                         : Icons.light_mode,
-                    color: Colors.pink,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                   title: Text(l10n.darkMode),
                   trailing: Switch(
@@ -131,7 +131,7 @@ class _SettingsTabState extends State<SettingsTab> {
                     onChanged: (value) {
                       themeProvider.toggleTheme(value);
                     },
-                    activeColor: Colors.pink,
+                    activeColor: Theme.of(context).colorScheme.primary,
                   ),
                 ),
 
@@ -139,7 +139,7 @@ class _SettingsTabState extends State<SettingsTab> {
                 ListTile(
                   leading: Icon(
                     Icons.language,
-                    color: Colors.pink,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                   title: Text(l10n.language),
                   trailing: DropdownButton<String>(
@@ -216,7 +216,7 @@ class _SettingsTabState extends State<SettingsTab> {
                                         interestKey, value);
                                   }
                                 },
-                                activeColor: Colors.pink,
+                                activeColor: Theme.of(context).colorScheme.primary,
                               ),
                               Expanded(
                                 child: Text(
@@ -256,7 +256,7 @@ class _SettingsTabState extends State<SettingsTab> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 24, vertical: 12),
                     minimumSize: const Size(200, 48),
-                    foregroundColor: Colors.pink,
+                    foregroundColor: Theme.of(context).colorScheme.primary,
                   ),
                   child: Text(l10n.saveSettings),
                 ),
@@ -281,7 +281,7 @@ class _SettingsTabState extends State<SettingsTab> {
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.pink,
+                    foregroundColor: Theme.of(context).colorScheme.primary,
                   ),
                   child: Text(l10n.logout),
                 ),
@@ -292,10 +292,10 @@ class _SettingsTabState extends State<SettingsTab> {
                   onTap: () {
                     _showConfirmDeleteAccountDialog(context);
                   },
-                  child: const Text(
+                  child:  Text(
                     'Delete account',
                     style: TextStyle(
-                      color: Colors.pink,
+                      color: Theme.of(context).colorScheme.primary,
                       decoration: TextDecoration.underline,
                     ),
                   ),
