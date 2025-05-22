@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:news_lens/l10n.dart';
+import 'package:news_lens/presentation/screens/auth/splash_screen.dart';
 import 'package:news_lens/presentation/screens/onboarding/pre_settings/pre_settings_provider.dart';
 import 'package:news_lens/presentation/screens/tabs/settings_tab/settings_tab.dart';
 import 'package:news_lens/providers/locale_provider.dart';
@@ -16,7 +17,7 @@ import 'package:news_lens/presentation/screens/auth/register.dart';
 import 'package:news_lens/presentation/screens/home_page.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-Future main() async {
+void main() async {
   await dotenv.load();
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -39,8 +40,6 @@ Future main() async {
   User? currentUser = FirebaseAuth.instance.currentUser;
   if (currentUser != null) {
     await themeProvider.updateUserId(currentUser.uid);
-  } else {
-    await themeProvider.loadFromPrefs();
   }
 
   runApp(
@@ -62,7 +61,6 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final localeProvider = Provider.of<LocaleProvider>(context);
-    
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -87,8 +85,9 @@ class MyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      initialRoute: '/', 
       routes: {
-        "/": (context) => const Register(),
+        '/': (context) => const SplashScreen(), 
         "/login": (context) => const Login(),
         "/home": (context) => const HomePage(),
         "/pre_settings": (context) => const PreSettings(),
