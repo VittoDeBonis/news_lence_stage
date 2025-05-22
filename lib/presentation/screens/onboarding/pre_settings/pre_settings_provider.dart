@@ -17,7 +17,7 @@ class PreSettingsProvider extends ChangeNotifier {
   String? localImagePath; 
   List<String> languageList = ['EN', 'IT', 'DE', 'FR'];
   String selectedLanguage = 'EN';
-  List<String> interestsList = ['Politics', 'Sports', 'Science', 'Technology'];
+  List<String> interestsList = ['Politics', 'Sports', 'Science', 'Technology', 'Business', 'Health'];
   
   // Mappa gli interessi localizzati ai valori standard
   final Map<String, String> _interestToStandardMap = {
@@ -26,21 +26,32 @@ class PreSettingsProvider extends ChangeNotifier {
     'Sports': 'sports',
     'Science': 'science',
     'Technology': 'technology',
+    'Business': 'business',
+    'Health': 'health',
     
+    // Italiano
     'Politica': 'politics',
     'Sport': 'sports',
     'Scienza': 'science',
     'Tecnologia': 'technology',
+    'Affari': 'business',
+    'Salute': 'health',
     
+    // Tedesco
     'Politik': 'politics',
     'Sport': 'sports',
     'Wissenschaft': 'science',
     'Technologie': 'technology',
+    'Geschäft': 'business',
+    'Gesundheit': 'health',
     
+    // Francese
     'Politique': 'politics',
     'Sports': 'sports',
     'Science': 'science',
     'Technologie': 'technology',
+    'Affaires': 'business',
+    'Santé': 'health',
   };
   
   Map<String, bool> selectedInterests = {};

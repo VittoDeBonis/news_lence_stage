@@ -138,6 +138,10 @@ class _HomeTabState extends State<HomeTab> {
         return Icons.science;
       case 'technology':
         return Icons.computer;
+      case 'business':
+        return Icons.business;
+      case 'health':
+        return Icons.health_and_safety;
       default:
         return Icons.category;
     }
@@ -158,6 +162,10 @@ class _HomeTabState extends State<HomeTab> {
       case 'science':
         return Colors.purple.withOpacity(0.2);
       case 'technology':
+        return Colors.yellow.withOpacity(0.2);
+      case 'business':
+        return Colors.pink.withOpacity(0.2);
+      case 'health':
         return Colors.orange.withOpacity(0.2);
       default:
         return Theme.of(context).colorScheme.surfaceContainerHighest;
@@ -212,8 +220,12 @@ class _HomeTabState extends State<HomeTab> {
         return l10n.science;
       case 'technology':
         return l10n.technology;
+      case 'business':
+        return l10n.business;
+      case 'health':
+        return l10n.health;
       default:
-        return category; // Fallback al nome originale se non c'è traduzione
+        return category; 
     }
   }
 
@@ -321,7 +333,7 @@ class _HomeTabState extends State<HomeTab> {
                 final category = allCategories[index];
                 return _buildCategoryItem(
                   category,
-                  l10n: l10n // Passa l10n al builder della categoria
+                  l10n: l10n 
                 );
               },
             ),
