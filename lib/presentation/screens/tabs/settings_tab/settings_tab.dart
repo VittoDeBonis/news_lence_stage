@@ -67,6 +67,23 @@ class _SettingsTabState extends State<SettingsTab> {
     }
   }
 
+  Future<void> _logout() async {
+    try {
+      await FirebaseAuth.instance.signOut();
+      Navigator.pushNamedAndRemoveUntil(
+          context, "/", (Route<dynamic> route) => false);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error signing out: $e');
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text(
+                'Error signing out. Please try again.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
@@ -76,6 +93,22 @@ class _SettingsTabState extends State<SettingsTab> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: Text(l10n.settings),
+        actions: [
+          GestureDetector(
+            onTap: _logout,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 16.0),
+              child: Text(
+                l10n.logout,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.primary,
+                  decoration: TextDecoration.underline,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -259,31 +292,6 @@ class _SettingsTabState extends State<SettingsTab> {
                     foregroundColor: Theme.of(context).colorScheme.primary,
                   ),
                   child: Text(l10n.saveSettings),
-                ),
-
-                const SizedBox(height: 10),
-
-                ElevatedButton(
-                  onPressed: () async {
-                    try {
-                      await FirebaseAuth.instance.signOut();
-                      Navigator.pushNamedAndRemoveUntil(
-                          context, "/", (Route<dynamic> route) => false);
-                    } catch (e) {
-                      if (kDebugMode) {
-                        print('Error signing out: $e');
-                      }
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text(
-                                'Error signing out. Please try again.')),
-                      );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    foregroundColor: Theme.of(context).colorScheme.primary,
-                  ),
-                  child: Text(l10n.logout),
                 ),
 
                 const SizedBox(height: 15),
