@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:news_lens/models/news_class.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:news_lens/presentation/screens/news_summary_chatbot.dart'; // Import this
 
 class NewsDetails extends StatefulWidget {
   final News news;
@@ -14,7 +15,7 @@ class NewsDetails extends StatefulWidget {
 class _NewsDetailsState extends State<NewsDetails> {
   bool _showFullArticle = true;
   late String _category;
-  
+
   @override
   void initState() {
     super.initState();
@@ -32,19 +33,19 @@ class _NewsDetailsState extends State<NewsDetails> {
       }
       return news.category;
     }
- 
+
     final String searchText = '${news.title} ${news.description ?? ''} ${news.content}'.toLowerCase();
-    
-    if (searchText.contains('politic') || searchText.contains('govern') || 
+
+    if (searchText.contains('politic') || searchText.contains('govern') ||
         searchText.contains('elect') || searchText.contains('president')) {
       return 'politics';
-    } else if (searchText.contains('sport') || searchText.contains('team') || 
+    } else if (searchText.contains('sport') || searchText.contains('team') ||
               searchText.contains('match') || searchText.contains('player')) {
       return 'sports';
-    } else if (searchText.contains('scien') || searchText.contains('research') || 
+    } else if (searchText.contains('scien') || searchText.contains('research') ||
               searchText.contains('stud') || searchText.contains('discover')) {
       return 'science';
-    } else if (searchText.contains('tech') || searchText.contains('software') || 
+    } else if (searchText.contains('tech') || searchText.contains('software') ||
               searchText.contains('device') || searchText.contains('digital')) {
       return 'technology';
     } else {
@@ -53,6 +54,16 @@ class _NewsDetailsState extends State<NewsDetails> {
       }
       return 'general';
     }
+  }
+
+  // Define openNewsSummaryChatbot method here
+  void openNewsSummaryChatbot(News news) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NewsSummaryChatbot(news: news, initialSummary: '', isDialog: true),
+      ),
+    );
   }
 
   @override
@@ -105,7 +116,7 @@ class _NewsDetailsState extends State<NewsDetails> {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       Text(
                         _formatPublishedDate(widget.news.publishedAt as String),
@@ -115,12 +126,12 @@ class _NewsDetailsState extends State<NewsDetails> {
                             ?.copyWith(color: Colors.grey[600]),
                       ),
                       if (widget.news.url != null && widget.news.url!.isNotEmpty)
-                  TextButton.icon(
-                    onPressed: _openArticle,
-                    icon: const Icon(Icons.link, size: 16),
-                    label: const Text("Read full article"),
-                  ),
                       _buildCategoryIcon(_category),
+                      IconButton(
+                          icon: const Icon(Icons.smart_toy_outlined),
+                          color: Colors.green,
+                          onPressed: () => openNewsSummaryChatbot(widget.news), // Use widget.news here
+                        ),
                     ],
                   ),
                 ),
@@ -146,16 +157,10 @@ class _NewsDetailsState extends State<NewsDetails> {
 
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16.0),
-                  child: ElevatedButton.icon(
-                    onPressed: () => _launchURL(widget.news.url),
-                    icon: Icon(Icons.open_in_browser),
-                    label: Text('Apri nel Browser'),
-                    style: ElevatedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      backgroundColor: Colors.blue,
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    ),
+                  child: TextButton.icon(
+                    onPressed: _openArticle,
+                    icon: const Icon(Icons.link, size: 16),
+                    label: const Text("Read full article"),
                   ),
                 ),
               ]),
@@ -188,12 +193,12 @@ class _NewsDetailsState extends State<NewsDetails> {
     if (kDebugMode) {
       print('NewsDetails - mostrando icona per categoria: "$normalizedCategory"');
     }
-    
+
     IconData iconData;
     Color bgColor;
-    String displayCategory = normalizedCategory.substring(0, 1).toUpperCase() + 
+    String displayCategory = normalizedCategory.substring(0, 1).toUpperCase() +
                             normalizedCategory.substring(1);
-    
+
     switch (normalizedCategory) {
       case 'politics':
         iconData = Icons.account_balance;

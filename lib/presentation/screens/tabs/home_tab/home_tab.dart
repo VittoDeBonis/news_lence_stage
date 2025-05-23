@@ -540,7 +540,7 @@ class _HomeTabState extends State<HomeTab> {
                         child: IconButton(
                           icon: const Icon(Icons.smart_toy_outlined),
                           color: Colors.green,
-                          onPressed: () => _openNewsSummaryChatbot(news),
+                          onPressed: () => openNewsSummaryChatbot(news),
                         ),
                       ),
                     ),
@@ -578,7 +578,7 @@ class _HomeTabState extends State<HomeTab> {
     _loadNews(category: category);
   }
 
-  void _openNewsSummaryChatbot(News news) {
+  void openNewsSummaryChatbot(News news) {
     Navigator.push(
       context,
       MaterialPageRoute(
