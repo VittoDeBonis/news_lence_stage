@@ -77,13 +77,10 @@ class _SettingsTabState extends State<SettingsTab> {
             onTap: _logout,
             child: Padding(
               padding: const EdgeInsets.only(right: 16.0),
-              child: Text(
-                l10n.logout,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.primary,
-                  decoration: TextDecoration.underline,
-                  fontSize: 16,
-                ),
+              child: Icon(
+                Icons.logout, 
+                color: Theme.of(context).colorScheme.primary,
+                size: 24,
               ),
             ),
           ),
