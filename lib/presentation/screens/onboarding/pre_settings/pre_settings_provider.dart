@@ -14,54 +14,76 @@ class PreSettingsProvider extends ChangeNotifier {
   String? userId;
   String userEmail = '';
   String nickname = '';
-  String? localImagePath; 
+  String? localImagePath;
   List<String> languageList = ['EN', 'IT', 'DE', 'FR'];
   String selectedLanguage = 'EN';
-  List<String> interestsList = ['Politics', 'Sports', 'Science', 'Technology', 'Business', 'Health'];
   
-  // Mappa gli interessi localizzati ai valori standard
-  final Map<String, String> _interestToStandardMap = {
-    // Inglese (standard)
-    'Politics': 'politics',
-    'Sports': 'sports',
-    'Science': 'science',
-    'Technology': 'technology',
-    'Business': 'business',
-    'Health': 'health',
-    
-    // Italiano
-    'Politica': 'politics',
-    'Sport': 'sports',
-    'Scienza': 'science',
-    'Tecnologia': 'technology',
-    'Affari': 'business',
-    'Salute': 'health',
-    
-    // Tedesco
-    'Politik': 'politics',
-    'Sport': 'sports',
-    'Wissenschaft': 'science',
-    'Technologie': 'technology',
-    'Geschäft': 'business',
-    'Gesundheit': 'health',
-    
-    // Francese
-    'Politique': 'politics',
-    'Sports': 'sports',
-    'Science': 'science',
-    'Technologie': 'technology',
-    'Affaires': 'business',
-    'Santé': 'health',
+  // Lista completa degli interessi in inglese (valori standard)
+  final List<String> standardInterests = ['politics', 'sports', 'science', 'technology', 'business', 'health'];
+  
+  // Mappa per la localizzazione degli interessi
+  final Map<String, Map<String, String>> localizedInterests = {
+    'EN': {
+      'politics': 'Politics',
+      'sports': 'Sports',
+      'science': 'Science',
+      'technology': 'Technology',
+      'business': 'Business',
+      'health': 'Health',
+    },
+    'IT': {
+      'politics': 'Politica',
+      'sports': 'Sport',
+      'science': 'Scienza',
+      'technology': 'Tecnologia',
+      'business': 'Affari',
+      'health': 'Salute',
+    },
+    'DE': {
+      'politics': 'Politik',
+      'sports': 'Sport',
+      'science': 'Wissenschaft',
+      'technology': 'Technologie',
+      'business': 'Geschäft',
+      'health': 'Gesundheit',
+    },
+    'FR': {
+      'politics': 'Politique',
+      'sports': 'Sports',
+      'science': 'Science',
+      'technology': 'Technologie',
+      'business': 'Affaires',
+      'health': 'Santé',
+    },
   };
   
+  // Interessi selezionati (usiamo gli ID standard)
   Map<String, bool> selectedInterests = {};
+  
   bool dataLoaded = false;
-  bool isUploadingImage = false; 
+  bool isUploadingImage = false;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance; 
+  final FirebaseStorage _storage = FirebaseStorage.instance;
 
   PreSettingsProvider() {
     getUserInfo();
+  }
+
+  // Ottieni la lista degli interessi localizzati per la lingua corrente
+  List<String> getInterestsList() {
+    return standardInterests.map((interest) => 
+      localizedInterests[selectedLanguage]?[interest] ?? interest
+    ).toList();
+  }
+
+  // Ottieni l'ID standard da un interesse localizzato
+  String? getStandardInterestId(String localizedInterest) {
+    for (var entry in localizedInterests[selectedLanguage]!.entries) {
+      if (entry.value == localizedInterest) {
+        return entry.key;
+      }
+    }
+    return null;
   }
 
   void getUserInfo() {
@@ -80,7 +102,6 @@ class PreSettingsProvider extends ChangeNotifier {
     return '';
   }
 
-  // Metodo per ottenere il path locale dell'immagine salvato in SharedPreferences
   Future<String?> getLocalImagePath() async {
     if (userId == null) return null;
     
@@ -88,7 +109,6 @@ class PreSettingsProvider extends ChangeNotifier {
     return prefs.getString('profile_image_path_$userId');
   }
 
-  // Metodo per salvare il path locale dell'immagine in SharedPreferences
   Future<void> saveLocalImagePath(String path) async {
     if (userId == null) return;
     
@@ -97,7 +117,6 @@ class PreSettingsProvider extends ChangeNotifier {
     localImagePath = path;
   }
 
-  // Metodo per rimuovere il path locale dell'immagine da SharedPreferences
   Future<void> removeLocalImagePath() async {
     if (userId == null) return;
     
@@ -135,22 +154,20 @@ class PreSettingsProvider extends ChangeNotifier {
           List<dynamic> interests = userData['interests'];
           
           // Inizializza tutti gli interessi a false
-          for (var interest in interestsList) {
+          for (var interest in standardInterests) {
             selectedInterests[interest] = false;
           }
           
-          // Imposta quelli salvati a true (converte da id standard a nomi localizzati)
+          // Imposta a true solo quelli presenti nel documento
           for (var interest in interests) {
-            // Trova l'interesse localizzato corrispondente all'id standard
-            String? localizedInterest = _findLocalizedInterest(interest.toString());
-            if (localizedInterest != null && selectedInterests.containsKey(localizedInterest)) {
-              selectedInterests[localizedInterest] = true;
+            if (standardInterests.contains(interest)) {
+              selectedInterests[interest] = true;
             }
           }
         } else {
-          // Inizializza tutti a false
-          for (var interest in interestsList) {
-            selectedInterests[interest] = true;
+          // Default: tutti falsi
+          for (var interest in standardInterests) {
+            selectedInterests[interest] = false;
           }
         }
         
@@ -161,8 +178,8 @@ class PreSettingsProvider extends ChangeNotifier {
         }
       } else {
         // Se l'utente non esiste, inizializza i valori di default
-        for (var interest in interestsList) {
-          selectedInterests[interest] = true;
+        for (var interest in standardInterests) {
+          selectedInterests[interest] = true; // Default: tutti selezionati
         }
         
         // Se è la prima volta, imposta il nickname dall'email
@@ -172,7 +189,7 @@ class PreSettingsProvider extends ChangeNotifier {
           await _firestore.collection('users').doc(userId).set({
             'nickname': nickname,
             'language': 'EN',
-            'interests': [],
+            'interests': standardInterests, // Default: tutti selezionati
             'email': userEmail,
             'createdAt': FieldValue.serverTimestamp()
           });
@@ -189,32 +206,16 @@ class PreSettingsProvider extends ChangeNotifier {
     }
   }
 
-  // Metodo per trovare l'interesse localizzato corrispondente all'id standard
-  String? _findLocalizedInterest(String standardId) {
-    for (var entry in interestsList) {
-      if (_interestToStandardMap[entry]?.toLowerCase() == standardId.toLowerCase()) {
-        return entry;
-      }
-    }
-    return null;
-  }
-
-  // Metodo per scaricare l'immagine da Firebase Storage e salvarla localmente
   Future<void> _downloadAndSaveImage(String imageUrl) async {
     try {
-      // Ottieni la directory dei documenti dell'app
       Directory appDocDir = await getApplicationDocumentsDirectory();
       String localPath = path.join(appDocDir.path, 'profile_images', 'profile_$userId.jpg');
       
-      // Crea la directory se non esiste
       Directory(path.dirname(localPath)).createSync(recursive: true);
       
-      // Scarica l'immagine (questo è un esempio semplificato, 
-      // potresti voler usare una libreria come http per il download)
       Reference storageRef = _storage.refFromURL(imageUrl);
       await storageRef.writeToFile(File(localPath));
       
-      // Salva il path locale
       await saveLocalImagePath(localPath);
       image = File(localPath);
       
@@ -241,38 +242,6 @@ class PreSettingsProvider extends ChangeNotifier {
     }
   }
 
-  // Modificata per consentire l'aggiornamento senza notificare
-  void updateInterests(List<String> newInterests, [bool notify = true]) {
-    // Verifica se la lista è effettivamente cambiata per evitare rebuild non necessari
-    bool hasChanged = false;
-    
-    if (interestsList.length != newInterests.length) {
-      hasChanged = true;
-    } else {
-      for (int i = 0; i < interestsList.length; i++) {
-        if (interestsList[i] != newInterests[i]) {
-          hasChanged = true;
-          break;
-        }
-      }
-    }
-    
-    if (!hasChanged) return; // Se non ci sono cambiamenti, esci
-    
-    interestsList = newInterests;
-    
-    // Aggiorna la mappa degli interessi mantenendo lo stato precedente
-    Map<String, bool> updatedInterests = {};
-    for (var interest in interestsList) {
-      updatedInterests[interest] = selectedInterests[interest] ?? true;
-    }
-    selectedInterests = updatedInterests;
-    
-    if (notify) {
-      notifyListeners();
-    }
-  }
-
   void setLanguage(String language) {
     if (languageList.contains(language) && selectedLanguage != language) {
       selectedLanguage = language;
@@ -280,45 +249,32 @@ class PreSettingsProvider extends ChangeNotifier {
     }
   }
 
-  void toggleInterest(String interest, bool value) {
-    if (selectedInterests.containsKey(interest) && selectedInterests[interest] != value) {
-      selectedInterests[interest] = value;
+  void toggleInterest(String standardInterestId, bool value) {
+    if (selectedInterests.containsKey(standardInterestId) && selectedInterests[standardInterestId] != value) {
+      selectedInterests[standardInterestId] = value;
       notifyListeners();
     }
   }
 
   Future<void> savePreferences() async {
     if (userId == null) return;
-    
     try {
-      // Converti gli interessi localizzati in ID standard
-      List<String> userInterests = [];
-      selectedInterests.forEach((interest, isSelected) {
-        if (isSelected) {
-          String standardId = _interestToStandardMap[interest] ?? interest.toLowerCase();
-          userInterests.add(standardId);
-        }
-      });
-      
-      // Prepara i dati da salvare
-      Map<String, dynamic> userData = {
-        'nickname': nickname.isEmpty ? getUserNameFromEmail() : nickname,
+      // Prepara la lista degli interessi selezionati (solo gli ID standard)
+      List<String> userInterests = selectedInterests.entries
+          .where((entry) => entry.value)
+          .map((entry) => entry.key)
+          .toList();
+
+      // Salva i dati su Firestore
+      await _firestore.collection('users').doc(userId).set({
         'language': selectedLanguage,
         'interests': userInterests,
-        'updatedAt': FieldValue.serverTimestamp()
-      };
-      
-      // Salva i dati su Firestore
-      await _firestore.collection('users').doc(userId).set(userData, SetOptions(merge: true));
-      
-      if (nickname.isEmpty) {
-        nickname = getUserNameFromEmail();
-        notifyListeners();
-      }
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      notifyListeners();
     } catch (e) {
-      if (kDebugMode) {
-        print('Errore nel salvataggio delle preferenze: $e');
-      }
+      print('Errore nel salvataggio delle preferenze: $e');
     }
   }
 
@@ -330,20 +286,20 @@ class PreSettingsProvider extends ChangeNotifier {
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: Text('Seleziona immagine'),
+            title: const Text('Seleziona immagine'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 ListTile(
-                  leading: Icon(Icons.camera_alt),
-                  title: Text('Scatta una foto'),
+                  leading: const Icon(Icons.camera_alt),
+                  title: const Text('Scatta una foto'),
                   onTap: () async {
                     Navigator.pop(context, await picker.pickImage(source: ImageSource.camera));
                   },
                 ),
                 ListTile(
-                  leading: Icon(Icons.photo_library),
-                  title: Text('Scegli dalla galleria'),
+                  leading: const Icon(Icons.photo_library),
+                  title: const Text('Scegli dalla galleria'),
                   onTap: () async {
                     Navigator.pop(context, await picker.pickImage(source: ImageSource.gallery));
                   },
@@ -355,48 +311,32 @@ class PreSettingsProvider extends ChangeNotifier {
       );
 
       if (pickedFile != null && userId != null) {
-        // Imposta lo stato di caricamento
         isUploadingImage = true;
         notifyListeners();
         
-        // Aggiorna immediatamente l'immagine locale senza aspettare il caricamento
-        // Questo consentirà di vedere subito l'immagine nell'interfaccia
         image = File(pickedFile.path);
         notifyListeners();
         
         try {
-          // Ottieni la directory dei documenti dell'app
           Directory appDocDir = await getApplicationDocumentsDirectory();
           String localPath = path.join(appDocDir.path, 'profile_images', 'profile_$userId.jpg');
-          
-          // Crea la directory se non esiste
           Directory(path.dirname(localPath)).createSync(recursive: true);
           
-          // Copia l'immagine selezionata nella directory locale
-          
-          // Copia l'immagine selezionata nella directory locale
           File imageFile = File(pickedFile.path);
           File localImageFile = await imageFile.copy(localPath);
           
-          // Salva il path locale
           await saveLocalImagePath(localPath);
           
-          // Carica l'immagine su Firebase Storage in background
           String fileName = 'profile_${userId}_${DateTime.now().millisecondsSinceEpoch}${path.extension(pickedFile.path)}';
           Reference storageRef = _storage.ref().child('profile_images/$fileName');
           
-          // Inizia il caricamento
           await storageRef.putFile(localImageFile);
-          
-          // Ottiene l'URL dell'immagine
           String imageUrl = await storageRef.getDownloadURL();
           
-          // Aggiorna Firestore con l'URL dell'immagine
           await _firestore.collection('users').doc(userId).update({
             'profileImageUrl': imageUrl
           });
           
-          // Aggiorna l'immagine locale con il file salvato localmente
           image = localImageFile;
         } catch (e) {
           if (kDebugMode) {
@@ -405,10 +345,6 @@ class PreSettingsProvider extends ChangeNotifier {
         } finally {
           isUploadingImage = false;
           notifyListeners();
-        }
-      } else {
-        if (kDebugMode) {
-          print('Nessuna immagine selezionata.');
         }
       }
     } catch (e) {
@@ -424,36 +360,27 @@ class PreSettingsProvider extends ChangeNotifier {
     if (userId == null) return;
     
     try {
-      // Rimuove l'immagine locale
       if (localImagePath != null && File(localImagePath!).existsSync()) {
         await File(localImagePath!).delete();
       }
       await removeLocalImagePath();
       
-      // Ottiene il documento utente per verificare se ha un'immagine
       DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
       
       if (userDoc.exists) {
         Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
         
         if (userData['profileImageUrl'] != null) {
-          // Estrae il percorso dell'immagine dall'URL
           String imageUrl = userData['profileImageUrl'];
-          
-          // Crea un riferimento all'immagine in Firebase Storage
           Reference storageRef = _storage.refFromURL(imageUrl);
-          
-          // Elimina l'immagine da Firebase Storage
           await storageRef.delete();
           
-          // Aggiorna Firestore rimuovendo l'URL dell'immagine
           await _firestore.collection('users').doc(userId).update({
             'profileImageUrl': FieldValue.delete()
           });
         }
       }
       
-      // Rimuove l'immagine locale
       image = null;
       notifyListeners();
     } catch (e) {
@@ -463,12 +390,10 @@ class PreSettingsProvider extends ChangeNotifier {
     }
   }
 
-  // Metodo getter per ottenere l'immagine corrente
   File? getCurrentImage() {
     return image;
   }
 
-  // Metodo per verificare se esiste un'immagine del profilo
   bool hasProfileImage() {
     return image != null && image!.existsSync();
   }
