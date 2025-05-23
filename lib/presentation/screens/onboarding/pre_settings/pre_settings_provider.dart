@@ -397,4 +397,6 @@ class PreSettingsProvider extends ChangeNotifier {
   bool hasProfileImage() {
     return image != null && image!.existsSync();
   }
+
+  void updateInterests(List<String> list, bool bool) {}
 }
