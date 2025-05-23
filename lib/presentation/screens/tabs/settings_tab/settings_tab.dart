@@ -1,32 +1,12 @@
-import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:news_lens/l10n/l10n_extension.dart';
 import 'package:news_lens/presentation/screens/onboarding/pre_settings/pre_settings_provider.dart';
 import 'package:news_lens/providers/locale_provider.dart';
-import 'package:provider/provider.dart';
 import 'package:news_lens/providers/theme_provider.dart';
-import 'package:news_lens/l10n.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-
-// Estensione per supportare l'accesso dinamico alle chiavi di traduzione
-extension AppLocalizationsExtensions on AppLocalizations {
-  String localize(String key) {
-    switch (key) {
-      case 'politics':
-        return politics;
-      case 'sports':
-        return sports;
-      case 'science':
-        return science;
-      case 'technology':
-        return technology;
-      default:
-        return key; // fallback se la chiave non è tradotta
-    }
-  }
-}
 
 class SettingsTab extends StatefulWidget {
   const SettingsTab({super.key});
@@ -85,8 +65,7 @@ class _SettingsTabState extends State<SettingsTab> {
       }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text(
-                'Error signing out. Please try again.')),
+            content: Text('Error signing out. Please try again.')),
       );
     }
   }
@@ -121,6 +100,10 @@ class _SettingsTabState extends State<SettingsTab> {
         padding: const EdgeInsets.all(16.0),
         child: Consumer<PreSettingsProvider>(
           builder: (context, preSettings, _) {
+            if (!preSettings.dataLoaded) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
             return Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -152,7 +135,8 @@ class _SettingsTabState extends State<SettingsTab> {
                     ),
                     IconButton(
                       onPressed: _editNickname,
-                      icon: Icon(Icons.edit, color: Theme.of(context).colorScheme.primary),
+                      icon: Icon(Icons.edit,
+                          color: Theme.of(context).colorScheme.primary),
                     ),
                   ],
                 ),
@@ -174,7 +158,6 @@ class _SettingsTabState extends State<SettingsTab> {
                     activeColor: Theme.of(context).colorScheme.primary,
                   ),
                 ),
-
                 // Sezione per la lingua
                 ListTile(
                   leading: Icon(
@@ -203,10 +186,8 @@ class _SettingsTabState extends State<SettingsTab> {
                     }).toList(),
                   ),
                 ),
-
                 const SizedBox(height: 32),
-
-                // Titolo Interessi (aggiustato con l10n.interests)
+                // Titolo Interessi
                 Text(
                   l10n.interests,
                   style: TextStyle(
@@ -216,7 +197,6 @@ class _SettingsTabState extends State<SettingsTab> {
                   ),
                 ),
                 const SizedBox(height: 8),
-
                 // Griglia degli interessi
                 GridView.builder(
                   shrinkWrap: true,
@@ -228,18 +208,19 @@ class _SettingsTabState extends State<SettingsTab> {
                     crossAxisSpacing: 5,
                     mainAxisSpacing: 5,
                   ),
-                  itemCount: preSettings.interestsList.length,
+                  itemCount: preSettings.standardInterests.length,
                   itemBuilder: (context, index) {
-                    final interestKey = preSettings.interestsList[index];
+                    final interestKey = preSettings.standardInterests[index];
                     final translatedInterest = l10n.localize(interestKey);
                     final isSelected =
                         preSettings.selectedInterests[interestKey] ?? false;
-
                     return Card(
                       elevation: 0,
                       color: isSelected
                           ? Theme.of(context).colorScheme.primaryContainer
-                          : Theme.of(context).colorScheme.surfaceContainerHighest,
+                          : Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest,
                       child: InkWell(
                         onTap: () {
                           preSettings.toggleInterest(interestKey, !isSelected);
@@ -257,7 +238,8 @@ class _SettingsTabState extends State<SettingsTab> {
                                         interestKey, value);
                                   }
                                 },
-                                activeColor: Theme.of(context).colorScheme.primary,
+                                activeColor:
+                                    Theme.of(context).colorScheme.primary,
                               ),
                               Expanded(
                                 child: Text(
@@ -280,15 +262,13 @@ class _SettingsTabState extends State<SettingsTab> {
                     );
                   },
                 ),
-
                 const SizedBox(height: 30),
-
                 ElevatedButton(
                   onPressed: () async {
                     await preSettings.savePreferences();
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('settings saved'),
+                        content: Text('Settings saved'),
                         duration: Duration(seconds: 2),
                       ),
                     );
@@ -301,14 +281,12 @@ class _SettingsTabState extends State<SettingsTab> {
                   ),
                   child: Text(l10n.saveSettings),
                 ),
-
                 const SizedBox(height: 15),
-
                 GestureDetector(
                   onTap: () {
                     _showConfirmDeleteAccountDialog(context);
                   },
-                  child:  Text(
+                  child: Text(
                     'Delete account',
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.primary,

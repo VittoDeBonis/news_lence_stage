@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:news_lens/l10n.dart';
+import 'package:news_lens/presentation/screens/home_page.dart';
 import 'package:news_lens/presentation/screens/onboarding/pre_settings/pre_settings_provider.dart';
 import 'package:news_lens/providers/locale_provider.dart';
-import 'package:news_lens/presentation/screens/home_page.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -14,24 +14,6 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path/path.dart' as path;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
-
-// Estensione per supportare l'accesso dinamico alle chiavi di traduzione
-extension AppLocalizationsExtensions on AppLocalizations {
-  String localize(String key) {
-    switch (key) {
-      case 'politics':
-        return politics;
-      case 'sports':
-        return sports;
-      case 'science':
-        return science;
-      case 'technology':
-        return technology;
-      default:
-        return key; // fallback se la chiave non è tradotta
-    }
-  }
-}
 
 class PreSettings extends StatefulWidget {
   const PreSettings({super.key});
@@ -96,13 +78,6 @@ class _PreSettingsState extends State<PreSettings> {
   Widget build(BuildContext context) {
     final localeProvider = Provider.of<LocaleProvider>(context);
     final l10n = AppLocalizations.of(context)!;
-
-    _provider.updateInterests([
-      'politics',
-      'sports',
-      'science',
-      'technology'
-    ], false);
 
     return ChangeNotifierProvider.value(
       value: _provider,
@@ -238,12 +213,12 @@ class _PreSettingsState extends State<PreSettings> {
                       crossAxisSpacing: 5,
                       mainAxisSpacing: 5,
                     ),
-                    itemCount: provider.interestsList.length,
+                    itemCount: provider.getInterestsList().length,
                     itemBuilder: (context, index) {
-                      final interestKey = provider.interestsList[index];
-                      final translatedInterest = l10n.localize(interestKey);
-                      final isSelected =
-                          provider.selectedInterests[interestKey] ?? false;
+                      final localizedInterest = provider.getInterestsList()[index];
+                      final standardInterest = provider.standardInterests[index];
+                      final isSelected = provider.selectedInterests[standardInterest] ?? false;
+                      
                       return Card(
                         elevation: 0,
                         color: isSelected
@@ -253,7 +228,7 @@ class _PreSettingsState extends State<PreSettings> {
                                 .surfaceContainerHighest,
                         child: InkWell(
                           onTap: () =>
-                              provider.toggleInterest(interestKey, !isSelected),
+                              provider.toggleInterest(standardInterest, !isSelected),
                           child: Padding(
                             padding:
                                 const EdgeInsets.symmetric(horizontal: 8.0),
@@ -263,13 +238,13 @@ class _PreSettingsState extends State<PreSettings> {
                                   value: isSelected,
                                   onChanged: (value) {
                                     if (value != null) {
-                                      provider.toggleInterest(interestKey, value);
+                                      provider.toggleInterest(standardInterest, value);
                                     }
                                   },
                                 ),
                                 Expanded(
                                   child: Text(
-                                    translatedInterest,
+                                    localizedInterest,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
                                       fontWeight: isSelected
