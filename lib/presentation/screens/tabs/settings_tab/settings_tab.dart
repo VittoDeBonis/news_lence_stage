@@ -42,9 +42,16 @@ class _SettingsTabState extends State<SettingsTab> {
   @override
   void initState() {
     super.initState();
-    _preSettingsProvider =
-        Provider.of<PreSettingsProvider>(context, listen: false);
+    _preSettingsProvider = Provider.of<PreSettingsProvider>(context, listen: false);
     _preSettingsProvider.getUserInfo(); // Carica le informazioni dell'utente
+    _preSettingsProvider.updateInterests([
+    'politics',
+    'sports', 
+    'science',
+    'technology',
+    'business',
+    'health'
+  ],false);
   }
 
   // Widget per costruire l'immagine del profilo
@@ -187,7 +194,8 @@ class _SettingsTabState extends State<SettingsTab> {
                       }
                     },
                     items: preSettings.languageList
-                        .map<DropdownMenuItem<String>>((String value) {
+                        .map<DropdownMenuItem<String>>(
+                            (String value) {
                       return DropdownMenuItem<String>(
                         value: value,
                         child: Text(value),
