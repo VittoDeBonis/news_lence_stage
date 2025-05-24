@@ -1,6 +1,12 @@
 {
   "preferencesSaved": "Preferences saved successfully",
+  "allTheActivity": "All the activity",
+  "summary": "Summary",
+  "regeneration": "Regeneration",
+  "traduction": "Traduction",
+  "shares": "Shares",
   "health": "Health",
+  "summary": "Summary",
   "business": "Business",
   "news":"News",
   "all":"All",
@@ -23,7 +29,7 @@
   "signup": "Signup",
   "login": "Login",
   "logout": "Logout",
-  "cronology": "Chronology",
+  "chronology": "Chronology",
   "home": "Home",
   "settings": "Settings",
   "language": "Language",
@@ -39,4 +45,5 @@
   "savePdf": "Save PDF",
   "sharePdf": "Share PDF",
   "defaultNickname": "User"
+  
 }

@@ -1,7 +1,13 @@
 {
   "appTitle": "News Lens",
   "news":"Nachricht",
+  "allTheActivity": "alle Aktivitäten",
+  "summary": "Übersicht",
+  "regeneration": "Regenerierung",
+  "traduction": "Traduction",
+  "shares": "Aktien",
   "health": "Gesundheit",
+  "summary": "Übersicht",
   "business": "Unternehmen",
   "all":"Alle",
   "deleteAccount":"Konto löschen",
