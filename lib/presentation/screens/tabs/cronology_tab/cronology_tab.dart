@@ -238,11 +238,11 @@ class _CronologyTabState extends State<CronologyTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Scaffold( 
       appBar: AppBar(
-        title: Text(_eventName.isNotEmpty
-            ? 'Cronologia delle Attività - $_eventName'
-            : 'Cronologia delle Attività'),
+        title: Text(
+             'Cronologia'
+            ),
         automaticallyImplyLeading: false,
         actions: [
           IconButton(

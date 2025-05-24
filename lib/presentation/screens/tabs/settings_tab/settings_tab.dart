@@ -84,13 +84,10 @@ class _SettingsTabState extends State<SettingsTab> {
             onTap: _logout,
             child: Padding(
               padding: const EdgeInsets.only(right: 16.0),
-              child: Text(
-                l10n.logout,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.primary,
-                  decoration: TextDecoration.underline,
-                  fontSize: 16,
-                ),
+              child: Icon(
+                Icons.logout, 
+                color: Theme.of(context).colorScheme.primary,
+                size: 24,
               ),
             ),
           ),
@@ -247,11 +244,13 @@ class _SettingsTabState extends State<SettingsTab> {
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     color: isSelected
-                                        ? Colors.black
-                                        : Colors.black87,
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
+                                        ? (Theme.of(context).brightness == Brightness.dark
+                                            ? Colors.white
+                                            : Colors.black)
+                                        : (Theme.of(context).brightness == Brightness.dark
+                                            ? Colors.white70
+                                            : Colors.black87),
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                                   ),
                                 ),
                               ),
