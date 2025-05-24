@@ -237,11 +237,13 @@ class _SettingsTabState extends State<SettingsTab> {
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     color: isSelected
-                                        ? Colors.black
-                                        : Colors.black87,
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
+                                        ? (Theme.of(context).brightness == Brightness.dark
+                                            ? Colors.white
+                                            : Colors.black)
+                                        : (Theme.of(context).brightness == Brightness.dark
+                                            ? Colors.white70
+                                            : Colors.black87),
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                                   ),
                                 ),
                               ),
