@@ -1088,7 +1088,8 @@ Future<void> _logPdfGenerationActivity() async {
             ),
             Padding(
               padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
-              child: Row(               
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     'Summary',
@@ -1096,36 +1097,34 @@ Future<void> _logPdfGenerationActivity() async {
                           fontWeight: FontWeight.bold,
                         ),
                   ),
-                  const SizedBox(width: 40),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       IconButton(
                         onPressed: () {
-                         _speak();
-                       },
+                          _speak();
+                        },
                         icon: Icon(
-                        _isSpeaking ? Icons.stop : Icons.campaign,
-                           color: _isSpeaking ? Colors.red : Colors.white,
+                          _isSpeaking ? Icons.stop : Icons.campaign,
+                          color: _isSpeaking ? Colors.red : Colors.white,
                         ),
                       ),
-                    const SizedBox(width:22),
-                    IconButton(
-                    onPressed: _isTranslating ? null : _translateSummary,
-                      icon: _isTranslating
-                        ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                        : Icon(
-                        Icons.translate,
-                        color: _isTranslated ? Colors.green : Colors.white,
-                        ),
-                    ),
-                  ],
+                      const SizedBox(width: 22),
+                      IconButton(
+                        onPressed: _isTranslating ? null : _translateSummary,
+                        icon: _isTranslating
+                            ? SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : Icon(
+                                Icons.translate,
+                                color: _isTranslated ? Colors.green : Colors.white,
+                              ),
+                      ),
+                    ],
                   ),
-                ], 
+                ],
               ),
             ),
             Text(
@@ -1134,7 +1133,7 @@ Future<void> _logPdfGenerationActivity() async {
                     height: 1.5,
                   ),
             ),
-            const SizedBox(height: 45),
+            const SizedBox(height: 250),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
